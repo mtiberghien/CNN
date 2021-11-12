@@ -46,6 +46,6 @@ tensor* FC_forward_propagation(tensor* input, int n_inputs, layer layer){
 
 tensor* FC_backward_propagation(tensor* output_error, optimizer optimizer, layer layer)
 {
-    //TODO
+    //TODO Using sample described at:https://medium.com/france-school-of-ai/math%C3%A9matiques-des-r%C3%A9seaux-de-neurones-code-python-613d8e83541
     return NULL;
 }
