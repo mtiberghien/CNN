@@ -2,7 +2,7 @@
 #define CNN_TENSOR
 
 typedef struct tensor{
-    double* t;
+    double* v;
     int size;
 } tensor;
 

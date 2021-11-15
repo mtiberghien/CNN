@@ -16,10 +16,10 @@ layer buildFCLayer(int input_size, int output_size){
     layer.output_size = output_size;
     layer.weights.size = input_size*output_size;
     for(int i=0;i<input_size*output_size;i++){
-        layer.weights.t[i] = (double)rand() / (double)RAND_MAX ;
+        layer.weights.v[i] = (double)rand() / (double)RAND_MAX ;
     }
     layer.bias.size = output_size;
-    layer.bias.t = calloc(output_size,sizeof(double));
+    layer.bias.v = calloc(output_size,sizeof(double));
     layer.forward_propagation=FC_forward_propagation;
     layer.backward_propagation=FC_backward_propagation;
     return layer;
@@ -34,11 +34,12 @@ tensor* FC_forward_propagation(tensor* input, int n_inputs, layer layer){
     {
         tensor t = layer.output[i];
         t.size = layer.output_size;
-        t.t = calloc(layer.output_size,sizeof(double));
+        t.v = calloc(layer.output_size,sizeof(double));
         for(int j=0;j<layer.output_size;j++){
             for(int k=0;k<layer.input_size;k++){
-                t.t[j] += layer.weights.t[j*layer.input_size+k]* (input[i].t[k]) + layer.bias.t[j];
+                t.v[j] += layer.weights.v[j*layer.input_size+k]* (input[i].v[k]);
             }
+            t.v[j] += + layer.bias.v[j];
         }
     }
     return layer.output;
@@ -46,6 +47,18 @@ tensor* FC_forward_propagation(tensor* input, int n_inputs, layer layer){
 
 tensor* FC_backward_propagation(tensor* output_error, optimizer optimizer, layer layer)
 {
-    //TODO Using sample described at:https://medium.com/france-school-of-ai/math%C3%A9matiques-des-r%C3%A9seaux-de-neurones-code-python-613d8e83541
-    return NULL;
+    tensor* input_error = (tensor*)malloc(sizeof(tensor)*layer.n_inputs);
+    for(int i=0;i<layer.n_inputs;i++)
+    {
+        tensor ie_t = input_error[i];
+        ie_t.size = layer.input_size;
+        ie_t.v = calloc(layer.input_size, sizeof(double));
+        for(int j=0;j<layer.input_size;j++){
+            for(int k=0;k<layer.output_size;k++){
+                ie_t.v[j] += layer.weights.v[j+layer.input_size*k]*(output_error[i].v[k]);
+            }
+        }
+    }
+    //TODO Finish weight and biases update
+    return input_error;
 }

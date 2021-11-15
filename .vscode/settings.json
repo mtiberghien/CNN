@@ -1,1 +1,19 @@
-{}
+{
+    "files.associations": {
+        "*.tcc": "c",
+        "deque": "c",
+        "string": "c",
+        "vector": "c",
+        "memory_resource": "c",
+        "optional": "c",
+        "functional": "c",
+        "memory": "c",
+        "fstream": "c",
+        "istream": "c",
+        "numeric": "c",
+        "ostream": "c",
+        "string_view": "c",
+        "type_traits": "c",
+        "typeinfo": "c"
+    }
+}
