@@ -12,5 +12,7 @@ void clear_tensor(tensor);
 //Clear memory of a collection of tensors
 void clear_tensors(tensor*,int);
 
+double sum(tensor*, double(*func)(double));
+
 #endif
 

@@ -13,3 +13,14 @@ void clear_tensors(tensor* tensors, int n_tensor){
     }
     free(tensors);
 }
+
+//Sum the result of a function on a tensor
+double sum(tensor* tensor, double(*func)(double x))
+{
+    double result = 0;
+    for(int i=0;i<tensor->size;i++)
+    {
+        result+=func(tensor->v[i]);
+    }
+    return result;
+}
