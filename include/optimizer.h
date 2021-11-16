@@ -1,14 +1,17 @@
 #ifndef OPTIMIZER_CNN
 #define OPTIMIZER_CNN
 
+//Represents an optimization calculation
 typedef struct optimizer{
+    //learning rate
     double alpha;
-    double (*apply_gradient)(double value, double gradient);
+    //gradient calculation
+    double (*apply_gradient)(double value, double gradient, struct optimizer* optimizer);
 } optimizer;
 
 
-optimizer build_optimizer_SGD(double alpha);
+optimizer* build_optimizer_SGD(double alpha);
 
-double apply_gradient_SGD(double value, double gradient, optimizer optimizer);
+double apply_gradient_SGD(double value, double gradient, optimizer* optimizer);
 
 #endif

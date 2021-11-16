@@ -14,6 +14,12 @@
         "ostream": "c",
         "string_view": "c",
         "type_traits": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "algorithm": "c",
+        "random": "c",
+        "iosfwd": "c",
+        "iostream": "c",
+        "sstream": "c",
+        "streambuf": "c"
     }
 }
