@@ -41,25 +41,27 @@ layer* build_layer_FC(int input_size, int output_size, activation* activation){
 }
 
 //Common forward propagation loop
-tensor* forward_propagation_loop(tensor* inputs, int n_inputs, struct layer* layer)
+tensor* forward_propagation_loop(tensor* inputs, int batch_size, struct layer* layer)
 {
-    // Clear memory
-    clear_layer_input_output(layer);
     //Store inputs (used in backward propagation)
     layer->inputs = inputs;
-    layer->batch_size = n_inputs;
+    layer->batch_size = batch_size;
     //Allocate memory for outputs and activation_input
-    layer->outputs=malloc(sizeof(tensor)*n_inputs);
-    layer->activation_inputs=malloc(sizeof(tensor)*n_inputs);
+    layer->outputs=malloc(sizeof(tensor)*batch_size);
+    layer->activation_inputs=malloc(sizeof(tensor)*batch_size);
     // Loop into input batch
-    for(int i=0;i<n_inputs;i++)
+    for(int i=0;i<batch_size;i++)
     {
         //Output tensor memory allocation
         tensor output = layer->outputs[i];
         output.size = layer->output_size;
         output.v = calloc(layer->output_size,sizeof(double));
+
+        tensor activation_input = layer->activation_inputs[i];
+        activation_input.size = layer->output_size;
+        activation_input.v = malloc(sizeof(double)*layer->output_size);
         //Execute specific forward propagation
-        layer->forward_propagation(&inputs[i], &output, &layer->activation_inputs[i], layer);
+        layer->forward_propagation(&inputs[i], &output, &activation_input, layer);
     }
     return layer->outputs; 
 }
@@ -78,12 +80,15 @@ tensor* backward_propagation_loop(tensor* output_errors, optimizer* optimizer, s
         tensor ie_t = input_error[i];
         ie_t.size = layer->input_size;
         ie_t.v = calloc(layer->input_size, sizeof(double));
+
         //Execute specific backward propagation
-        layer->backward_propagation(&output_error, &ie_t, &layer->inputs[i], optimizer, layer);
+        layer->backward_propagation(&output_error, &ie_t, &layer->inputs[i], &layer->activation_inputs[i], optimizer, layer);
         //Clear gradient error from next layer
         clear_tensor(output_error);
     }
+    // Clear memory
     free(output_errors);
+    clear_layer_input_output(layer);
     return input_error;
 }
 
@@ -108,10 +113,10 @@ tensor* forward_propagation_FC(tensor* input, tensor* output, tensor* activation
 }
 
 //Backward propagation function for Fully Connected layer (perceptron)
-tensor* backward_propagation_FC(tensor* output_error, tensor* input_error, tensor* input, optimizer* optimizer, layer* layer)
+tensor* backward_propagation_FC(tensor* output_error, tensor* input_error, tensor* input, tensor* activation_input, optimizer* optimizer, layer* layer)
 {
-    //Get the derivative from gradient error of next layer
-    layer->activation->activation_func_prime(output_error);
+    //Back propagate the gradient error tensor
+    output_error = layer->activation->backward_propagation(activation_input,output_error, layer->activation);
     //Update biases using new output_error
     for(int j=0;j<layer->output_size;j++)
     {       
