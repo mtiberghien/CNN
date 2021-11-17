@@ -13,6 +13,8 @@ void clear_tensor(tensor);
 void clear_tensors(tensor*,int);
 
 double sum(tensor*, double(*func)(double));
+double max(tensor*);
+tensor* sub(tensor* tensor, double value);
 
 #endif
 

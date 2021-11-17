@@ -34,7 +34,8 @@ tensor* backward_propagation(tensor* activation_input, tensor* output_error, act
     return output_error;
 }
 
-activation* build_activation_relu(){
+activation* build_activation_relu()
+{
     activation* result = (activation*) malloc(sizeof(activation));
     result->backward_propagation=backward_propagation;
     result->activation_func=activation_func_relu;
@@ -43,11 +44,13 @@ activation* build_activation_relu(){
 
 tensor* activation_func_softmax(tensor* input)
 {
+    double max_value = max(input);
+    input = sub(input, max_value);
     double denominator = sum(input, exp);
     denominator = denominator == 0?1:denominator;
     for(int i=0;i<input->size;i++)
     {
-        double d = input->v[i];
+        double d = exp(input->v[i]);
         input->v[i]=d/denominator;
     }
     return input;
