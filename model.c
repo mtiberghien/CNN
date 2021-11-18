@@ -34,7 +34,7 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     tensor* outputs = inputs;
     for(int i=0; i<model->n_layers;i++)
     {
-        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, &model->layers[i]);
+        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, 0, &model->layers[i]);
     }
     return outputs;
 }
@@ -54,4 +54,17 @@ model* build_model(loss* loss, optimizer* optimizer)
     result->loss=loss;
     result->optimizer=optimizer;
     return result;
+}
+
+void clear_model(model* model)
+{
+    for(int i=0;i<model->n_layers;i++)
+    {
+        clear_layer(&model->layers[i]);
+    }
+    model->n_layers=0;
+    free(model->layers);
+    free(model->optimizer);
+    free(model->loss);
+    free(model);
 }

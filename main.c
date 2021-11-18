@@ -7,7 +7,7 @@ int remove_line(tensor* array, int index, int size_array)
 {
     if(index<size_array && index>=0)
     {
-        clear_tensor(array[index]);
+        clear_tensor(&array[index]);
         for(int i=index;i<size_array-1;i++)
         {
             array[i]=array[i+1];

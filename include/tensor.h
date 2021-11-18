@@ -8,7 +8,7 @@ typedef struct tensor{
 } tensor;
 
 //Clear memory of a tensor
-void clear_tensor(tensor);
+void clear_tensor(tensor*);
 //Clear memory of a collection of tensors
 void clear_tensors(tensor*,int);
 

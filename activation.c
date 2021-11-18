@@ -24,7 +24,7 @@ tensor* activation_func_prime_relu(tensor* activation_input)
     return activation_input;
 }
 
-tensor* backward_propagation(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
+tensor* activation_backward_propagation(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     activation_input = activation->activation_func_prime(activation_input);
     for(int i=0;i<gradient->size;i++)
@@ -37,7 +37,7 @@ tensor* backward_propagation(tensor* activation_input, tensor* gradient, tensor*
 activation* build_activation_relu()
 {
     activation* result = (activation*) malloc(sizeof(activation));
-    result->backward_propagation=backward_propagation;
+    result->activation_backward_propagation=activation_backward_propagation;
     result->activation_func=activation_func_relu;
     result->activation_func_prime=activation_func_prime_relu;
     return result;
@@ -80,7 +80,7 @@ tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient,
 activation* build_activation_softmax()
 {
     activation* result = (activation*) malloc(sizeof(activation));
-    result->backward_propagation=backward_propagation_softmax;
+    result->activation_backward_propagation=backward_propagation_softmax;
     result->activation_func=activation_func_softmax;
     return result;
 }
