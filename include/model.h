@@ -22,6 +22,7 @@ void add_layer(layer* layer, model* model);
 void remove_layer(int index, model* model);
 tensor* predict(tensor* inputs, int inputs_size, model* model);
 void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, model* model);
-
+model* build_model();
+void clear_model(model* model);
 
 #endif
