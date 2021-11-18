@@ -10,16 +10,16 @@ typedef struct activation{
     tensor* (*activation_func)(tensor* input);
     //Specific activation derivative calculation
     tensor* (*activation_func_prime)(tensor* activation_input);
-    tensor* (*backward_propagation)(tensor* activation_input, tensor* output_error, struct activation* activation);
+    tensor* (*backward_propagation)(tensor* activation_input, tensor* gradient, tensor* output, struct activation* activation);
 } activation;
 
-tensor* backward_propagation(tensor* activation_input, tensor* output_error, activation* activation);
+tensor* backward_propagation(tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
 tensor* activation_func_relu(tensor* input);
 tensor* activation_func_prime_relu(tensor* activation_input);
 activation* build_activation_relu();
 
 tensor* activation_func_softmax(tensor* input);
-tensor* activation_func_prime_softmax(tensor* activation_input);
+tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
 activation* build_activation_softmax();
 
 #endif

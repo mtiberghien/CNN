@@ -24,14 +24,14 @@ tensor* activation_func_prime_relu(tensor* activation_input)
     return activation_input;
 }
 
-tensor* backward_propagation(tensor* activation_input, tensor* output_error, activation* activation)
+tensor* backward_propagation(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
-    activation_input = activation->activation_func(activation_input);
-    for(int i=0;i<output_error->size;i++)
+    activation_input = activation->activation_func_prime(activation_input);
+    for(int i=0;i<gradient->size;i++)
     {
-        output_error->v[i]*= activation_input->v[i];
+        gradient->v[i]*= activation_input->v[i];
     }
-    return output_error;
+    return gradient;
 }
 
 activation* build_activation_relu()
@@ -40,6 +40,7 @@ activation* build_activation_relu()
     result->backward_propagation=backward_propagation;
     result->activation_func=activation_func_relu;
     result->activation_func_prime=activation_func_prime_relu;
+    return result;
 }
 
 tensor* activation_func_softmax(tensor* input)
@@ -56,8 +57,30 @@ tensor* activation_func_softmax(tensor* input)
     return input;
 }
 
-tensor* activation_func_prime_softmax(tensor* activation_input)
+tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
-    //TODO
-    return activation_input;
+    tensor gradient_product;
+    gradient_product.size = gradient->size;
+    gradient_product.v=malloc(sizeof(double)*gradient_product.size);
+    double sum =0;
+    for(int i=0;i<gradient->size;i++)
+    {
+        gradient_product.v[i]=gradient->v[i]*output->v[i];
+        sum+=gradient_product.v[i];
+    }
+    for(int i=0;i<gradient->size;i++)
+    {
+        gradient->v[i]-=sum;
+        gradient->v[i]*=output->v[i];
+    }
+    free(gradient_product.v);
+    return gradient;
+}
+
+activation* build_activation_softmax()
+{
+    activation* result = (activation*) malloc(sizeof(activation));
+    result->backward_propagation=backward_propagation_softmax;
+    result->activation_func=activation_func_softmax;
+    return result;
 }
