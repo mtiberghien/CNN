@@ -5,8 +5,11 @@
 #include "optimizer.h"
 #include "activation.h"
 
+typedef enum layer_type{FC} layer_type;
+
 //Represent a layer of a sequential neural network
 typedef struct layer{
+    layer_type type;
     tensor* mean_activation_input;
     tensor* mean_output;
     tensor* mean_input;

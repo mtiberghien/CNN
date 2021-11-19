@@ -16,5 +16,6 @@ double sum(tensor*, double(*func)(double));
 double max(tensor*);
 tensor* sub(tensor* tensor, double value);
 void initialize_tensor(tensor* tensor, int size);
+void print_tensor(tensor*);
 #endif
 

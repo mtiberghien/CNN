@@ -1,6 +1,8 @@
 #include "include/model.h"
 #include "include/layer.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include "include/common.h"
 
 void add_layer(layer* layer, model* model)
 {
@@ -38,9 +40,65 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     }
     return outputs;
 }
+
 void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model)
 {
-    
+    //Random indices support
+    int* indices = malloc(sizeof(int)*inputs_size);
+    for(int i=0;i<inputs_size;i++)
+    {
+        indices[i]=i;
+    }
+    //Epoch loop
+    for(int epoch=1;epoch<=epochs;epoch++)
+    {
+        printf("Epoch %d\n",epoch);
+        int remaining_size = inputs_size;
+        int current_batch_size = min(batch_size, remaining_size);
+        int main_indice=inputs_size-1;
+        double mean_error =0;
+        //Execute all batches of an epoch
+        while(current_batch_size>0)
+        {
+            //Initialize random batch without replace
+            tensor* batch = (tensor*)malloc(sizeof(tensor)*current_batch_size);
+            tensor* truths_batch = (tensor*)malloc(sizeof(tensor)*current_batch_size);
+            for(int i=0;i<current_batch_size;i++)
+            {
+                int random_indice =((double)rand() / (double)RAND_MAX)*main_indice;
+                int proposed_indice = indices[random_indice];
+                batch[i]=inputs[proposed_indice];
+                truths_batch[i]=truths[proposed_indice];
+                indices[random_indice]=indices[main_indice];
+                indices[main_indice]=main_indice;
+                main_indice--;
+            }
+            tensor* outputs = batch;
+
+            //Current batch Forward pass
+            for(int i=0;i<model->n_layers;i++)
+            {
+                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, 1, &model->layers[i]);
+            }
+            //mean of errors of current batch
+            mean_error = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
+
+            //Current batch Backward pass using mean of batch gradients
+            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
+            for(int i=model->n_layers-1;i>=0;i--)
+            {
+                mean_gradients = model->layers[i].backward_propagation(mean_gradients, model->optimizer, &model->layers[i], i);
+            }
+            clear_tensor(mean_gradients);
+            free(mean_gradients);
+            free(batch);
+            free(truths_batch);
+            remaining_size-=current_batch_size;
+            current_batch_size = min(batch_size, remaining_size);
+        }
+        printf("\tloss:%6.2f\n", mean_error);
+    }
+    free(indices);
 }
 
 void compile(optimizer* optimizer, loss* loss, model* model)
@@ -76,7 +134,7 @@ void clear_model(model* model)
     }
     model->n_layers=0;
     free(model->layers);
-    clear_optimizer(model->optimizer);
+    model->optimizer->clear(model->optimizer);
     free(model->optimizer);
     free(model->loss);
     free(model);

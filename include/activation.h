@@ -4,8 +4,11 @@
 #include "tensor.h"
 #include <stdlib.h>
 
+typedef enum activation_type {RELU,SOFTMAX} activation_type;
+
 //Represent a layer activation function and its derivative
 typedef struct activation{
+    activation_type type;
     //Specific activation calculation
     tensor* (*activation_func)(tensor* input);
     //Specific activation derivative calculation

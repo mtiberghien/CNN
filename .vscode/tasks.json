@@ -9,7 +9,7 @@
 				"-g",
 				"${workspaceFolder}/*.c",
 				"-o",
-				"${fileDirname}/bin/${fileBasenameNoExtension}",
+				"${workspaceFolder}/bin/${fileBasenameNoExtension}",
 				"-lm"
 			],
 			"options": {

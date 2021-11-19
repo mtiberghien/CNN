@@ -1,6 +1,7 @@
 #include "include/tensor.h"
 #include <stdlib.h>
 #include "float.h"
+#include <stdio.h>
 
 //Free memory of a tensor
 void clear_tensor(tensor* tensor){
@@ -49,3 +50,14 @@ void initialize_tensor(tensor* tensor, int size)
     tensor->size = size;
     tensor->v=calloc(size,sizeof(double));
 }
+
+void print_tensor(tensor* tensor)
+{
+    for(int i=0;i<tensor->size;i++)
+    {
+        printf("%6.2f ",tensor->v[i]);
+    }
+    printf("\n");
+}
+
+

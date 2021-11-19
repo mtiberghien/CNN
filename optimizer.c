@@ -2,7 +2,7 @@
 #include "math.h"
 #include <stdlib.h>
 
-void clear_optimizer(optimizer* optimizer)
+void clear_optimizer_Adam(optimizer* optimizer)
 {
     clear_tensors(optimizer->m, optimizer->n_layers);
     clear_tensors(optimizer->v, optimizer->n_layers);
@@ -10,8 +10,12 @@ void clear_optimizer(optimizer* optimizer)
     free(optimizer->v);
 }
 
+void clear_optimizer_default(optimizer* optimizer)
+{
+}
+
 //Build a simple gradient descent 
-optimizer* build_optimizer_GD(double alpha, double momentum)
+optimizer* build_optimizer_GD(double alpha)
 {
     //Memory allocation
     optimizer* result=(optimizer*) malloc(sizeof(optimizer));
@@ -21,6 +25,7 @@ optimizer* build_optimizer_GD(double alpha, double momentum)
     result->apply_gradient=apply_gradient_GD;
     result->type = GD;
     result->compile = compile_default;
+    result->clear = clear_optimizer_default;
     return result;
 }
 
@@ -34,6 +39,7 @@ optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, doub
     result->type = ADAM;
     result->compile = compile_Adam;
     result->apply_gradient= apply_gradient_Adam;
+    result->clear=clear_optimizer_Adam;
     return result;
 }
 

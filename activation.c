@@ -37,6 +37,7 @@ tensor* activation_backward_propagation(tensor* activation_input, tensor* gradie
 activation* build_activation_relu()
 {
     activation* result = (activation*) malloc(sizeof(activation));
+    result->type = RELU;
     result->activation_backward_propagation=activation_backward_propagation;
     result->activation_func=activation_func_relu;
     result->activation_func_prime=activation_func_prime_relu;
@@ -79,6 +80,7 @@ tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient,
 activation* build_activation_softmax()
 {
     activation* result = (activation*) malloc(sizeof(activation));
+    result->type = SOFTMAX;
     result->activation_backward_propagation=backward_propagation_softmax;
     result->activation_func=activation_func_softmax;
     return result;
