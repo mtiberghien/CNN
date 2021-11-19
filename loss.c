@@ -20,8 +20,7 @@ tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, los
     for(int i=0;i<batch_size;i++)
     {
         tensor* gradient = &gradients[i];
-        gradient->size = outputs[i].size;
-        gradient->v=calloc(gradient->size, sizeof(double));
+        initialize_tensor(gradient, outputs[i].size);
         loss->loss_prime(&truths[i], &outputs[i],gradient);
     }
 }

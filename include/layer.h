@@ -26,11 +26,11 @@ typedef struct layer{
     //Stores the forward propagation loop
     tensor* (*forward_propagation_loop)(tensor* inputs, int batch_size, short is_training, struct layer* layer);
     //Stores the backward propagation loop
-    tensor* (*backward_propagation)(tensor* gradients, optimizer* optimizer, struct layer* layer);
+    tensor* (*backward_propagation)(tensor* gradients, optimizer* optimizer, struct layer* layer, int layer_index);
     //Stores the specific forward propagation calculation (transition from inputs to outputs with activation)
     tensor* (*forward_calculation)(tensor* input, tensor* output, struct layer* layer);
     //Stores the specific backward propagation calculation (transition from gradient of next layer to gradient of current layer and update of weights and biases) 
-    tensor* (*backward_calculation)(tensor* gradient, tensor* gradient_previous, optimizer* optimizer, struct layer* layer);
+    tensor* (*backward_calculation)(tensor* gradient, tensor* gradient_previous, optimizer* optimizer, struct layer* layer, int layer_index);
     //Stores the activation object
     activation* activation;
 } layer;
@@ -38,9 +38,9 @@ typedef struct layer{
 void clear_layer(layer*);
 void clear_layer_input_output(layer*);
 tensor* forward_propagation_loop(tensor* inputs, int batch_size, short is_training, struct layer* layer);
-tensor* backward_propagation(tensor* gradients, optimizer* optimizer, struct layer* layer);
+tensor* backward_propagation(tensor* gradients, optimizer* optimizer, struct layer* layer, int layer_index);
 layer* build_layer_FC(int input_size, int output_size, activation* activation);
 tensor* forward_calculation_FC(tensor* input, tensor* output, layer* layer);
-tensor* backward_calculation_FC(tensor* gradient, tensor* gradient_previous, optimizer* optimizer, layer* layer);
+tensor* backward_calculation_FC(tensor* gradient, tensor* gradient_previous, optimizer* optimizer, layer* layer, int layer_index);
 
 #endif

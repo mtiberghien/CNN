@@ -12,7 +12,6 @@ void clear_tensors(tensor* tensors, int n_tensor){
     for(int i=0;i<n_tensor;i++){
         clear_tensor(&tensors[i]);
     }
-    free(tensors);
 }
 
 //Sum the result of a function on a tensor
@@ -43,4 +42,10 @@ tensor* sub(tensor* tensor, double value)
         tensor->v[i]-=value;
     }
     return tensor;
+}
+
+void initialize_tensor(tensor* tensor, int size)
+{
+    tensor->size = size;
+    tensor->v=calloc(size,sizeof(double));
 }

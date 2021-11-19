@@ -33,7 +33,7 @@ int main(){
         }
     }
 
-    size_array = remove_line(array,2, size_array);
+    size_array = remove_line(array,1, size_array);
 
     for(int i=0;i<size_array;i++)
     {
@@ -49,6 +49,7 @@ int main(){
     }
 
     clear_tensors(array, size_array);
+    free(array);
 
 
     

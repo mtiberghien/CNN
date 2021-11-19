@@ -38,12 +38,25 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     }
     return outputs;
 }
-void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, model* model)
+void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model)
 {
-
+    
 }
 
-model* build_model(loss* loss, optimizer* optimizer)
+void compile(optimizer* optimizer, loss* loss, model* model)
+{
+    model->loss=loss;
+    model->optimizer=optimizer;
+    int* layers_output_size = malloc(sizeof(int)*model->n_layers);
+    for(int i=0;i<model->n_layers;i++)
+    {
+        layers_output_size[i]=model->layers[i].output_size;
+    }
+    optimizer->compile(layers_output_size, model->n_layers, optimizer);
+    free(layers_output_size);
+}
+
+model* build_model()
 {
     model* result = (model*)malloc(sizeof(model));
     result->n_layers=0;
@@ -51,8 +64,7 @@ model* build_model(loss* loss, optimizer* optimizer)
     result->remove_layer=remove_layer;
     result->predict=predict;
     result->fit=fit;
-    result->loss=loss;
-    result->optimizer=optimizer;
+    result->compile = compile;
     return result;
 }
 
@@ -64,6 +76,7 @@ void clear_model(model* model)
     }
     model->n_layers=0;
     free(model->layers);
+    clear_optimizer(model->optimizer);
     free(model->optimizer);
     free(model->loss);
     free(model);

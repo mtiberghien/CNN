@@ -60,8 +60,7 @@ tensor* activation_func_softmax(tensor* input)
 tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     tensor gradient_product;
-    gradient_product.size = gradient->size;
-    gradient_product.v=malloc(sizeof(double)*gradient_product.size);
+    initialize_tensor(&gradient_product, gradient->size);
     double sum =0;
     for(int i=0;i<gradient->size;i++)
     {
