@@ -19,8 +19,8 @@ int main(){
     }
 
     model->add_layer(build_layer_FC(1,1, NULL), model);
-    model->compile(build_optimizer_GD(1E-3), build_loss_mse(), model);
-    training_result* result = model->fit(x, y, inputs_size, 1, 400, model);
+    model->compile(build_optimizer_GD(1E-4), build_loss_mse(), model);
+    training_result* result = model->fit(x, y, inputs_size, 1, 3700, model);
 
     tensor x_pred;
     initialize_tensor(&x_pred,1);
