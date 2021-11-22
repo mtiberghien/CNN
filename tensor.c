@@ -73,6 +73,7 @@ tensor* to_categorical(char** labels, int n_labels)
             unique_labels[count-1]=labels[i];
         }
     }
+    sort(unique_labels, count);
     //TODO
 }
 

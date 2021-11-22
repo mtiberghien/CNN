@@ -17,10 +17,21 @@ int index_of(char** list, int n_items, char* item)
     return -1;
 }
 
+void swap(char** xp, char** yp)
+{
+    char* temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+ 
+// A function to implement bubble sort
 void sort(char** list, int n_items)
 {
-    for(int i =0;i<n_items;i++)
-    {
-        //TODO
-    }
+   int i, j;
+   for (i = 0; i < n_items-1; i++)     
+ 
+       // Last i elements are already in place  
+       for (j = 0; j < n_items-i-1; j++)
+           if (strcmp(list[j] , list[j+1])>0)
+              swap(&list[j], &list[j+1]);
 }
