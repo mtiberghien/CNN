@@ -49,11 +49,11 @@ tensor* activation_func_softmax(tensor* input)
     double max_value = max(input);
     input = sub(input, max_value);
     double denominator = sum(input, exp);
-    denominator = denominator == 0?1:denominator;
+    double invert_denominator = denominator == 0?1:(double)1.0/denominator;
     for(int i=0;i<input->size;i++)
     {
         double d = exp(input->v[i]);
-        input->v[i]=d/denominator;
+        input->v[i]=d*invert_denominator;
     }
     return input;
 }

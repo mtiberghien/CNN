@@ -34,9 +34,10 @@ void remove_layer(int index, model* model)
 tensor* predict(tensor* inputs, int inputs_size, model* model)
 {
     tensor* outputs = inputs;
+    double invert_inputs_size = (double)1.0/inputs_size;
     for(int i=0; i<model->n_layers;i++)
     {
-        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, 0, &model->layers[i]);
+        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, invert_inputs_size, 0, &model->layers[i]);
     }
     return outputs;
 }
@@ -55,6 +56,7 @@ void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int ep
         printf("Epoch %d\n",epoch);
         int remaining_size = inputs_size;
         int current_batch_size = min(batch_size, remaining_size);
+        double invert_batch_size = (double)1.0/current_batch_size;
         int main_indice=inputs_size-1;
         double mean_error =0;
         //Execute all batches of an epoch
@@ -78,13 +80,13 @@ void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int ep
             //Current batch Forward pass
             for(int i=0;i<model->n_layers;i++)
             {
-                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, 1, &model->layers[i]);
+                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, invert_batch_size, 1, &model->layers[i]);
             }
             //mean of errors of current batch
-            mean_error = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
+            mean_error = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->loss);
 
             //Current batch Backward pass using mean of batch gradients
-            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
+            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
                 mean_gradients = model->layers[i].backward_propagation(mean_gradients, model->optimizer, &model->layers[i], i);
@@ -95,6 +97,7 @@ void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int ep
             free(truths_batch);
             remaining_size-=current_batch_size;
             current_batch_size = min(batch_size, remaining_size);
+            invert_batch_size = batch_size <= remaining_size ? invert_batch_size : (double)1.0/current_batch_size;
         }
         printf("\tloss:%6.2f\n", mean_error);
     }
