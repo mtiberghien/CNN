@@ -48,7 +48,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     int* indices = malloc(sizeof(int)*inputs_size);
     training_result* result = (training_result*)malloc(sizeof(training_result));
     int n_episodes = (inputs_size/batch_size + (inputs_size%batch_size == 0?0:1));
-    result->n_results = epochs;
+    result->n_results = n_episodes*epochs;
     result->loss = malloc(sizeof(double)*result->n_results);
     int result_indice=0;
     for(int i=0;i<inputs_size;i++)
@@ -105,10 +105,10 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             current_batch_size = min(batch_size, remaining_size);
             invert_batch_size = batch_size <= remaining_size ? invert_batch_size : (double)1.0/current_batch_size;
             model->optimizer->t++;
+            mean_error = sum_mean_error/n_episodes;
+            result->loss[result_indice]=mean_error;
+            result_indice++;
         }
-        mean_error = sum_mean_error/n_episodes;
-        result->loss[result_indice]=mean_error;
-        result_indice++;
         printf("\tloss:%6.4f\n", mean_error);
     }
     free(indices);
