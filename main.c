@@ -6,7 +6,7 @@
 #include "time.h"
 
 int main(){
-    model* model = build_model();
+   model* model = build_model();
     int inputs_size = 11;
     tensor* x = malloc(sizeof(tensor)*inputs_size);
     tensor* y = malloc(sizeof(tensor)*inputs_size);
@@ -18,8 +18,8 @@ int main(){
         y[i].v[0]=32+(1.8*x[i].v[0]);
     }
 
-    model->add_layer(build_layer_FC(1,1, NULL), model);
-    model->compile(build_optimizer_GD(1E-3), build_loss_mse(), model);
+    model->add_layer(build_layer_FC(1, NULL), model);
+    model->compile(1, build_optimizer_GD(1E-3), build_loss_mse(), model);
     training_result* result = model->fit(x, y, inputs_size, 1, 370, model);
 
     tensor x_pred;

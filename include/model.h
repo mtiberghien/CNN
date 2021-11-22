@@ -19,12 +19,12 @@ typedef struct model{
     void (*remove_layer)(int index, struct model*);
     tensor* (*predict)(tensor* inputs, int inputs_size, struct model*);
     training_result* (*fit)(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, struct model*);
-    void (*compile)(optimizer* optimizer, loss*loss, struct model* model);
+    void (*compile)(int input_size, optimizer* optimizer, loss*loss, struct model* model);
     optimizer* optimizer;
     loss* loss;
 } model;
 
-void compile(optimizer* optimizer, loss* loss, model* model);
+void compile(int input_size, optimizer* optimizer, loss* loss, model* model);
 void add_layer(layer* layer, model* model);
 void remove_layer(int index, model* model);
 tensor* predict(tensor* inputs, int inputs_size, model* model);

@@ -1,4 +1,4 @@
-#include "string.h"
+#include <string.h>
 
 int min(int x,int y)
 {

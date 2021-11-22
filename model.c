@@ -115,13 +115,15 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     return result;
 }
 
-void compile(optimizer* optimizer, loss* loss, model* model)
+void compile(int input_size, optimizer* optimizer, loss* loss, model* model)
 {
     model->loss=loss;
     model->optimizer=optimizer;
     int* layers_output_size = malloc(sizeof(int)*model->n_layers);
     for(int i=0;i<model->n_layers;i++)
     {
+        model->layers[i].compile_layer(input_size, &model->layers[i]);
+        input_size = model->layers[i].output_size;
         layers_output_size[i]=model->layers[i].output_size;
     }
     optimizer->compile(layers_output_size, model->n_layers, optimizer);

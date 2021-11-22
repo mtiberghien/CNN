@@ -29,30 +29,36 @@ void clear_layer(layer* layer)
     }
 }
 
-layer* build_layer_FC(int input_size, int output_size, activation* activation){
+void compile_layer(int input_size, layer* layer)
+{
+    layer->input_size = input_size;
+    layer->weights =(tensor*)malloc(layer->output_size* sizeof(tensor));
+    double invert_rand_max = (double)1.0/(double)RAND_MAX;
+    for(int i=0;i<layer->output_size;i++)
+    {
+        initialize_tensor(&layer->weights[i], input_size);
+        for(int j=0;j<input_size;j++)
+        {
+            layer->weights[i].v[j] = ((double)rand() * invert_rand_max) -(double)0.5 ;
+        }      
+    }
+    //Initialize biases
+    initialize_tensor(&layer->biases, layer->output_size);
+    for(int i=0;i<layer->output_size;i++)
+    {
+        layer->biases.v[i]=((double)rand() * invert_rand_max) -(double)0.5 ;
+    }
+}
+
+layer* build_layer_FC(int output_size, activation* activation){
     //Allocate layer memory
     layer* result = (layer*)malloc(sizeof(layer));
     result->type = FC;
     //Store input and output size
-    result->input_size = input_size;
     result->output_size = output_size;
-    result->weights =(tensor*)malloc(output_size* sizeof(tensor));
-    double invert_rand_max = (double)1.0/(double)RAND_MAX;
-    for(int i=0;i<output_size;i++)
-    {
-        initialize_tensor(&result->weights[i], input_size);
-        for(int j=0;j<input_size;j++)
-        {
-            result->weights[i].v[j] = ((double)rand() * invert_rand_max) -(double)0.5 ;
-        }      
-    }
-    //Initialize biases
-    initialize_tensor(&result->biases, output_size);
-    for(int i=0;i<output_size;i++)
-    {
-        result->biases.v[i]=((double)rand() * invert_rand_max) -(double)0.5 ;
-    }
+    
     //Set used methods for the layer
+    result->compile_layer = compile_layer;
     result->forward_propagation_loop=forward_propagation_loop;
     result->backward_propagation = backward_propagation;
     result->forward_calculation=forward_calculation_FC;

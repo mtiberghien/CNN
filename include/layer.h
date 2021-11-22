@@ -27,6 +27,7 @@ typedef struct layer{
     double invert_output_size;
     //Stores the output tensor batch (after activation)
     tensor* outputs;
+    void (*compile_layer)(int input_size, struct layer* layer);
     //Stores the forward propagation loop
     tensor* (*forward_propagation_loop)(tensor* inputs, int batch_size, double invert_batch_size, short is_training, struct layer* layer);
     //Stores the backward propagation loop
@@ -41,9 +42,10 @@ typedef struct layer{
 
 void clear_layer(layer*);
 void clear_layer_input_output(layer*);
+void compile_layer(int input_size, layer*);
 tensor* forward_propagation_loop(tensor* inputs, int batch_size, double invert_batch_size, short is_training, struct layer* layer);
 tensor* backward_propagation(tensor* gradients, optimizer* optimizer, struct layer* layer, int layer_index);
-layer* build_layer_FC(int input_size, int output_size, activation* activation);
+layer* build_layer_FC(int output_size, activation* activation);
 tensor* forward_calculation_FC(tensor* input, tensor* output, double invert_batch_size, layer* layer);
 tensor* backward_calculation_FC(tensor* gradient, tensor* gradient_previous, optimizer* optimizer, layer* layer, int layer_index);
 
