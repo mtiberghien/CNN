@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "float.h"
 #include <stdio.h>
+#include "include/common.h"
 
 //Free memory of a tensor
 void clear_tensor(tensor* tensor){
@@ -58,6 +59,21 @@ void print_tensor(tensor* tensor)
         printf("%6.2f ",tensor->v[i]);
     }
     printf("\n");
+}
+
+tensor* to_categorical(char** labels, int n_labels)
+{
+    char** unique_labels = (char**)malloc(sizeof(char*));
+    int count=0;
+    for(int i=0;i<n_labels;i++)
+    {
+        if(index_of(unique_labels, labels[i])>=0)
+        {
+            unique_labels = realloc(unique_labels, sizeof(char*)*++count);
+            unique_labels[count-1]=labels[i];
+        }
+    }
+    //TODO
 }
 
 
