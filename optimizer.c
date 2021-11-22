@@ -55,7 +55,7 @@ double apply_gradient_Adam(double value, double gradient, int layer_index, int t
     (&optimizer->v[layer_index])->v[tensor_index] = (optimizer->beta_2 * optimizer->v[layer_index].v[tensor_index]) + (1 - optimizer->beta_2) * pow(gradient,(double)2.0);
     double mhat = optimizer->m[layer_index].v[tensor_index]/(1 - pow(optimizer->beta_1, (double)optimizer->t+1));
     double vhat = optimizer->v[layer_index].v[tensor_index]/(1 - pow(optimizer->beta_2, (double)optimizer->t+1));
-    return value - (optimizer->alpha * mhat)/(sqrt(vhat)+optimizer->eps);
+    return value - ((optimizer->alpha * mhat)/(sqrt(vhat)+optimizer->eps));
 }
 
 void compile_default(int* layers_output_size, int n_layers, struct optimizer* optimizer)

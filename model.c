@@ -42,14 +42,20 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     return outputs;
 }
 
-void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model)
+training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model)
 {
     //Random indices support
     int* indices = malloc(sizeof(int)*inputs_size);
+    training_result* result = (training_result*)malloc(sizeof(training_result));
+    int n_episodes = (inputs_size/batch_size + (inputs_size%batch_size == 0?0:1));
+    result->n_results = epochs;
+    result->loss = malloc(sizeof(double)*result->n_results);
+    int result_indice=0;
     for(int i=0;i<inputs_size;i++)
     {
         indices[i]=i;
     }
+
     //Epoch loop
     for(int epoch=1;epoch<=epochs;epoch++)
     {
@@ -59,6 +65,7 @@ void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int ep
         double invert_batch_size = (double)1.0/current_batch_size;
         int main_indice=inputs_size-1;
         double mean_error =0;
+        double sum_mean_error=0;
         //Execute all batches of an epoch
         while(current_batch_size>0)
         {
@@ -83,8 +90,7 @@ void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int ep
                 outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, invert_batch_size, 1, &model->layers[i]);
             }
             //mean of errors of current batch
-            mean_error = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->loss);
-
+            sum_mean_error += model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->loss);
             //Current batch Backward pass using mean of batch gradients
             tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
@@ -98,10 +104,15 @@ void fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int ep
             remaining_size-=current_batch_size;
             current_batch_size = min(batch_size, remaining_size);
             invert_batch_size = batch_size <= remaining_size ? invert_batch_size : (double)1.0/current_batch_size;
+            model->optimizer->t++;
         }
-        printf("\tloss:%6.2f\n", mean_error);
+        mean_error = sum_mean_error/n_episodes;
+        result->loss[result_indice]=mean_error;
+        result_indice++;
+        printf("\tloss:%6.4f\n", mean_error);
     }
     free(indices);
+    return result;
 }
 
 void compile(optimizer* optimizer, loss* loss, model* model)
@@ -141,4 +152,19 @@ void clear_model(model* model)
     free(model->optimizer);
     free(model->loss);
     free(model);
+}
+
+void save_training_result(training_result* result, char* filename)
+{
+    FILE * fp;
+    fp = fopen(filename, "w");
+    if(fp != NULL)
+    {
+        fprintf(fp, "episode;loss\n");
+        for(int i=0;i<result->n_results;i++)
+        {
+            fprintf(fp,"%d;%f\n", i,result->loss[i]);
+        }
+    }
+    fclose(fp);
 }
