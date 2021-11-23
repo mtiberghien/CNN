@@ -1,6 +1,7 @@
 #include "include/layer.h"
 #include "include/tensor.h"
 #include <stdlib.h>
+#include <math.h>
 
 //Clear memory of temporary stored inputs and outputs
 void clear_layer_input_output(layer* layer)
@@ -34,19 +35,20 @@ void compile_layer(int input_size, layer* layer)
     layer->input_size = input_size;
     layer->weights =(tensor*)malloc(layer->output_size* sizeof(tensor));
     double invert_rand_max = (double)1.0/(double)RAND_MAX;
+    double limit=sqrt(6/(input_size+layer->output_size));
     for(int i=0;i<layer->output_size;i++)
     {
         initialize_tensor(&layer->weights[i], input_size);
         for(int j=0;j<input_size;j++)
         {
-            layer->weights[i].v[j] = ((double)rand() * invert_rand_max) -(double)0.5 ;
+            layer->weights[i].v[j] = (2*limit*((double)rand() * invert_rand_max)) - limit ;
         }      
     }
     //Initialize biases
     initialize_tensor(&layer->biases, layer->output_size);
     for(int i=0;i<layer->output_size;i++)
     {
-        layer->biases.v[i]=((double)rand() * invert_rand_max) -(double)0.5 ;
+        layer->biases.v[i]=(2*limit*((double)rand() * invert_rand_max)) - limit ;
     }
 }
 
@@ -145,7 +147,7 @@ tensor* forward_calculation_FC(tensor* input, tensor* output,layer* layer){
     if(layer->activation)
     {
         //Execute activation function and return output tensor
-        output = layer->activation->activation_func(output);
+        output = layer->activation->activation_forward(output, layer->activation);
     }
     if(layer->is_training)
     {

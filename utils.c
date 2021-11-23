@@ -12,3 +12,8 @@ double evaluate_accuracy(tensor* truth, tensor* prediction, int n_predictions)
     }
     return 100*score/n_predictions;
 }
+
+double evaluate_dataset_accuracy(dataset* data, model* model)
+{
+    return evaluate_accuracy(data->labels_categorical, model->predict(data->features, data->n_entries, model), data->n_entries);
+}

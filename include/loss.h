@@ -1,5 +1,5 @@
 #ifndef LOSS_CNN
-#define LOSS_CNNN
+#define LOSS_CNN
 
 #include "tensor.h"
 

@@ -1,5 +1,5 @@
 #ifndef MODEL_CNN
-#define MODEL_CNNN
+#define MODEL_CNN
 
 #include "tensor.h"
 #include "layer.h"

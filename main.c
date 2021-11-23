@@ -8,14 +8,15 @@
 #include "time.h"
 
 int main(){
-    dataset* train = getMNISTData(60000, 0);
+    dataset* train = getMNISTData(10000, 0);
     dataset* test = getMNISTData(100, 1);
     model* model = build_model();
-    model->add_layer(build_layer_FC(512, build_activation(TANH)), model);
+    model->add_layer(build_layer_FC(64, build_activation(TANH)), model);
     model->add_layer(build_layer_FC(10, build_activation(TANH)), model);
-    model->compile(train->n_features, build_optimizer(GD), build_loss(MSE), model);
-    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 5, model);
-    printf("accuracy:%6.2f%%\n", evaluate_accuracy(test->labels_categorical, model->predict(test->features, test->n_entries, model), test->n_entries));
+    model->compile(train->n_features, build_optimizer(ADAM), build_loss(MSE), model);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 1, 20, model);
+    printf("accuracy training:%6.2f%%\n", evaluate_dataset_accuracy(train, model));
+    printf("accuracy test:%6.2f%%\n", evaluate_dataset_accuracy(test, model));
     clear_model(model);
     save_training_result(result, "loss.csv");
     free(result);

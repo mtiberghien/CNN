@@ -52,6 +52,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     result->n_results = n_episodes*epochs;
     result->loss = malloc(sizeof(double)*result->n_results);
     int result_indice=0;
+    int mean_error_count = n_episodes/10;
     for(int i=0;i<inputs_size;i++)
     {
         indices[i]=i;
@@ -94,7 +95,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             }
             //sum of errors of current batch
             sum_errors = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
-            //Current batch Backward pass using mean of batch gradients
+            //Current batch Backward pass using sum of batch gradients
             tensor* sum_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
@@ -109,9 +110,16 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             mean_error = sum_errors/current_batch_size;
             current_batch_size = min(batch_size, remaining_size);
             result->loss[result_indice]=mean_error;
+            int start_indice = result_indice<mean_error_count-1?0:(result_indice - mean_error_count+1);
+            double last_error_sum = 0;
+            for(int i=start_indice;i<=result_indice;i++)
+            {
+                last_error_sum+=result->loss[i];
+            }
+            double last_mean_error=last_error_sum/(result_indice - start_indice +1);
             result_indice++;
             time(&step);
-            printf("\033[2K\r%d/%d: %.2f%% - %.0fs - loss: %.2f",trained,inputs_size, ((double)100*trained)/inputs_size, difftime(step,start), mean_error);
+            printf("\033[2K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",trained,inputs_size, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
             fflush(stdout);
         }
         model->optimizer->t++;

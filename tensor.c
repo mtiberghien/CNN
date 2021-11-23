@@ -24,6 +24,14 @@ void apply_func(tensor* tensor, double(*func)(double))
     }
 }
 
+void mult_tensor_func(tensor* tensor_dest, tensor* tensor_source, double(*func)(double))
+{
+    for(int i=0;i<tensor_dest->size;i++)
+    {
+        tensor_dest->v[i]*=func(tensor_source->v[i]);
+    }
+}
+
 //Sum the result of a function on a tensor
 double sum(tensor* tensor, double(*func)(double x))
 {

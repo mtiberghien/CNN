@@ -18,27 +18,25 @@ double tanh_prime(double x)
     return 1-pow(tanh(x),(double)2);
 }
 
-//Relu activation calculation
-tensor* activation_func_relu(tensor* input)
+double sigmoid(double x)
 {
-    apply_func(input, relu);
-    return input;
+    return 1/(1+exp(-x));
 }
 
-//Relu derivative calculation
-tensor* activation_func_prime_relu(tensor* activation_input)
+double func_x_minus_x_square(double x)
 {
-    apply_func(activation_input, relu_prime);
-    return activation_input;
+    return x*(1-x);
+}
+
+tensor* activation_forward(tensor* input, activation* activation)
+{
+    apply_func(input, activation->activation_func);
+    return input;
 }
 
 tensor* activation_backward_propagation(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
-    activation_input = activation->activation_func_prime(activation_input);
-    for(int i=0;i<gradient->size;i++)
-    {
-        gradient->v[i]*= activation_input->v[i];
-    }
+    mult_tensor_func(gradient, activation_input, activation->activation_func_prime);
     return gradient;
 }
 
@@ -47,9 +45,25 @@ activation* build_activation_relu()
     activation* result = (activation*) malloc(sizeof(activation));
     result->type = RELU;
     result->activation_backward_propagation=activation_backward_propagation;
-    result->activation_func=activation_func_relu;
-    result->activation_func_prime=activation_func_prime_relu;
+    result->activation_forward = activation_forward;
+    result->activation_func=relu;
+    result->activation_func_prime=relu_prime;
     return result;
+}
+
+activation* build_activation_sigmoid()
+{
+    activation* result = (activation*) malloc(sizeof(activation));
+    result->type = SIGMOID;
+    result->activation_backward_propagation=backward_propagation_sigmoid;
+    result->activation_forward = activation_forward;
+    result->activation_func=sigmoid;
+    return result;
+}
+tensor* backward_propagation_sigmoid(tensor* activation_input, tensor* gradient,tensor* output, activation* activation)
+{
+    mult_tensor_func(gradient, output, func_x_minus_x_square);
+    return gradient;
 }
 
 activation* build_activation(activation_type type)
@@ -58,11 +72,12 @@ activation* build_activation(activation_type type)
         case RELU: return build_activation_relu();
         case SOFTMAX: return build_activation_softmax();
         case TANH: return build_activation_tanh();
+        case SIGMOID: return build_activation_sigmoid();
         default: return NULL;
     }
 }
 
-tensor* activation_func_softmax(tensor* input)
+tensor* activation_forward_softmax(tensor* input, activation* activation)
 {
     double max_value = max(input);
     input = sub(input, max_value);
@@ -76,25 +91,14 @@ tensor* activation_func_softmax(tensor* input)
     return input;
 }
 
-tensor* activation_func_tanh(tensor* input)
-{
-    apply_func(input, tanh);
-    return input;
-}
-
-tensor* activation_func_prime_tanh(tensor* activation_input)
-{
-    apply_func(activation_input, tanh_prime);
-    return activation_input;
-}
-
 activation* build_activation_tanh()
 {
     activation* result = (activation*) malloc(sizeof(activation));
     result->type = TANH;
     result->activation_backward_propagation=activation_backward_propagation;
-    result->activation_func=activation_func_tanh;
-    result->activation_func_prime=activation_func_prime_tanh;
+    result->activation_forward = activation_forward;
+    result->activation_func=tanh;
+    result->activation_func_prime=tanh_prime;
     return result;
 }
 
@@ -122,6 +126,6 @@ activation* build_activation_softmax()
     activation* result = (activation*) malloc(sizeof(activation));
     result->type = SOFTMAX;
     result->activation_backward_propagation=backward_propagation_softmax;
-    result->activation_func=activation_func_softmax;
+    result->activation_forward= activation_forward_softmax;
     return result;
 }
