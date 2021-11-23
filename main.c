@@ -4,38 +4,21 @@
 #include "math.h"
 #include "include/common.h"
 #include "include/mnistdata.h"
+#include "include/utils.h"
 #include "time.h"
 
 int main(){
-   /*model* model = build_model();
-    int inputs_size = 11;
-    tensor* x = malloc(sizeof(tensor)*inputs_size);
-    tensor* y = malloc(sizeof(tensor)*inputs_size);
-    for(int i=0;i<inputs_size;i++)
-    {
-        initialize_tensor(&x[i],1);
-        x[i].v[0]=(i-5)*5;
-        initialize_tensor(&y[i],1);
-        y[i].v[0]=32+(1.8*x[i].v[0]);
-    }
-
-    model->add_layer(build_layer_FC(1, NULL), model);
-    model->compile(1, build_optimizer_GD(1E-3), build_loss_mse(), model);
-    training_result* result = model->fit(x, y, inputs_size, 1, 370, model);
-
-    tensor x_pred;
-    initialize_tensor(&x_pred,1);
-    x_pred.v[0]=100;
-    tensor* y_pred = model->predict(&x_pred,1, model);
-    printf("%6.2f °C -> %6.2f °F\n", x_pred.v[0], y_pred->v[0]);
-    printf("weight:%6.2f, bias:%6.2f\n", model->layers[0].weights[0].v[0], model->layers[0].biases.v[0]);
+    dataset* train = getMNISTData(60000, 0);
+    dataset* test = getMNISTData(100, 1);
+    model* model = build_model();
+    model->add_layer(build_layer_FC(512, build_activation(TANH)), model);
+    model->add_layer(build_layer_FC(10, build_activation(TANH)), model);
+    model->compile(train->n_features, build_optimizer(GD), build_loss(MSE), model);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 5, model);
+    printf("accuracy:%6.2f%%\n", evaluate_accuracy(test->labels_categorical, model->predict(test->features, test->n_entries, model), test->n_entries));
     clear_model(model);
     save_training_result(result, "loss.csv");
-    free(result);*/
-    dataset* train = getMNISTData(100, 0);
-    printf("read %d lines.\n", train->n_entries);
-    printf("%s:", train->labels[0]);
-    print_tensor(&train->labels_categorical[0]);
-    printf("\n");
+    free(result);
     clear_dataset(train);
+    clear_dataset(test);
 }

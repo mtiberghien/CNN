@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "include/common.h"
+#include <time.h>
 
 void add_layer(layer* layer, model* model)
 {
@@ -37,7 +38,7 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     double invert_inputs_size = (double)1.0/inputs_size;
     for(int i=0; i<model->n_layers;i++)
     {
-        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, invert_inputs_size, 0, &model->layers[i]);
+        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, 0, &model->layers[i]);
     }
     return outputs;
 }
@@ -55,17 +56,19 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     {
         indices[i]=i;
     }
-
+    time_t start,step;
     //Epoch loop
     for(int epoch=1;epoch<=epochs;epoch++)
     {
-        printf("Epoch %d\n",epoch);
+        printf("Epoch %d/%d\n",epoch, epochs);
+        time(&start);
         int remaining_size = inputs_size;
         int current_batch_size = min(batch_size, remaining_size);
-        double invert_batch_size = (double)1.0/current_batch_size;
         int main_indice=inputs_size-1;
         double mean_error =0;
-        double sum_mean_error=0;
+        double sum_errors=0;
+        int trained =0;
+        int episode=1;
         //Execute all batches of an epoch
         while(current_batch_size>0)
         {
@@ -87,29 +90,32 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             //Current batch Forward pass
             for(int i=0;i<model->n_layers;i++)
             {
-                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, invert_batch_size, 1, &model->layers[i]);
+                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, 1, &model->layers[i]);
             }
-            //mean of errors of current batch
-            sum_mean_error += model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->loss);
+            //sum of errors of current batch
+            sum_errors = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
             //Current batch Backward pass using mean of batch gradients
-            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
+            tensor* sum_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
-                mean_gradients = model->layers[i].backward_propagation(mean_gradients, model->optimizer, &model->layers[i], i);
+                sum_gradients = model->layers[i].backward_propagation(sum_gradients, model->optimizer, &model->layers[i], i);
             }
-            clear_tensor(mean_gradients);
-            free(mean_gradients);
+            clear_tensor(sum_gradients);
+            free(sum_gradients);
             free(batch);
             free(truths_batch);
             remaining_size-=current_batch_size;
+            trained+=current_batch_size;
+            mean_error = sum_errors/current_batch_size;
             current_batch_size = min(batch_size, remaining_size);
-            invert_batch_size = batch_size <= remaining_size ? invert_batch_size : (double)1.0/current_batch_size;
-            model->optimizer->t++;
-            mean_error = sum_mean_error/n_episodes;
             result->loss[result_indice]=mean_error;
             result_indice++;
+            time(&step);
+            printf("\033[2K\r%d/%d: %.2f%% - %.0fs - loss: %.2f",trained,inputs_size, ((double)100*trained)/inputs_size, difftime(step,start), mean_error);
+            fflush(stdout);
         }
-        printf("\tloss:%6.4f\n", mean_error);
+        model->optimizer->t++;
+        printf("\n");
     }
     free(indices);
     return result;

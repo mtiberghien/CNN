@@ -16,6 +16,14 @@ void clear_tensors(tensor* tensors, int n_tensor){
     }
 }
 
+void apply_func(tensor* tensor, double(*func)(double))
+{
+    for(int i=0;i<tensor->size;i++)
+    {
+        tensor->v[i]=func(tensor->v[i]);
+    }
+}
+
 //Sum the result of a function on a tensor
 double sum(tensor* tensor, double(*func)(double x))
 {
@@ -81,6 +89,21 @@ tensor* to_categorical(char** labels, int n_labels)
         result[i].v[index_of(unique_labels, count, labels[i])]=1;
     }
     free(unique_labels);
+    return result;
+}
+
+int arg_max(tensor* tensor)
+{
+    double max = -DBL_MAX;
+    int result = -1;
+    for(int i=0;i<tensor->size;i++)
+    {
+        if(tensor->v[i]>max)
+        {
+            max = tensor->v[i];
+            result = i;
+        }
+    }
     return result;
 }
 

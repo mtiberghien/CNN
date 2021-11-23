@@ -2,25 +2,33 @@
 #include "include/tensor.h"
 #include "math.h"
 
+double relu(double x)
+{
+    return x<0?0:x;
+}
+
+double relu_prime(double x)
+{
+    return x<0?0:1;
+}
+
+
+double tanh_prime(double x)
+{
+    return 1-pow(tanh(x),(double)2);
+}
+
 //Relu activation calculation
 tensor* activation_func_relu(tensor* input)
 {
-    for(int i=0;i<input->size;i++)
-    {
-        double d = input->v[i];
-        input->v[i]=d<0?0:d;
-    }
+    apply_func(input, relu);
     return input;
 }
 
 //Relu derivative calculation
 tensor* activation_func_prime_relu(tensor* activation_input)
 {
-    for(int i=0;i<activation_input->size;i++)
-    {
-        double d = activation_input->v[i];
-        activation_input->v[i]=d<=0?0:1;
-    }
+    apply_func(activation_input, relu_prime);
     return activation_input;
 }
 
@@ -44,6 +52,16 @@ activation* build_activation_relu()
     return result;
 }
 
+activation* build_activation(activation_type type)
+{
+    switch(type){
+        case RELU: return build_activation_relu();
+        case SOFTMAX: return build_activation_softmax();
+        case TANH: return build_activation_tanh();
+        default: return NULL;
+    }
+}
+
 tensor* activation_func_softmax(tensor* input)
 {
     double max_value = max(input);
@@ -56,6 +74,28 @@ tensor* activation_func_softmax(tensor* input)
         input->v[i]=d*invert_denominator;
     }
     return input;
+}
+
+tensor* activation_func_tanh(tensor* input)
+{
+    apply_func(input, tanh);
+    return input;
+}
+
+tensor* activation_func_prime_tanh(tensor* activation_input)
+{
+    apply_func(activation_input, tanh_prime);
+    return activation_input;
+}
+
+activation* build_activation_tanh()
+{
+    activation* result = (activation*) malloc(sizeof(activation));
+    result->type = TANH;
+    result->activation_backward_propagation=activation_backward_propagation;
+    result->activation_func=activation_func_tanh;
+    result->activation_func_prime=activation_func_prime_tanh;
+    return result;
 }
 
 tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)

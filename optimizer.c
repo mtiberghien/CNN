@@ -14,6 +14,15 @@ void clear_optimizer_default(optimizer* optimizer)
 {
 }
 
+optimizer* build_optimizer(optimizer_type type)
+{
+    switch(type){
+        case GD: 
+        case ADAM: return build_optimizer_Adam(1E-3,0.9,0.999,1E-7);
+        default: return build_optimizer_GD(1E-3);
+    }
+}
+
 //Build a simple gradient descent 
 optimizer* build_optimizer_GD(double alpha)
 {

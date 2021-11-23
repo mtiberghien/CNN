@@ -18,5 +18,7 @@ tensor* sub(tensor* tensor, double value);
 void initialize_tensor(tensor* tensor, int size);
 void print_tensor(tensor*);
 tensor* to_categorical(char** labels, int n_labels);
+int arg_max(tensor* tensor);
+void apply_func(tensor* tensor, double(*func)(double));
 #endif
 

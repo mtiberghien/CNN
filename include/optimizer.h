@@ -23,7 +23,7 @@ typedef struct optimizer{
     void (*clear)(struct optimizer* optimizer);
 } optimizer;
 
-
+optimizer* build_optimizer(optimizer_type type);
 optimizer* build_optimizer_GD(double alpha);
 optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps);
 
