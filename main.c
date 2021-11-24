@@ -18,7 +18,6 @@ int main(){
     printf("accuracy training:%6.2f%%\n", evaluate_dataset_accuracy(train, model));
     printf("accuracy test:%6.2f%%\n", evaluate_dataset_accuracy(test, model));
     clear_model(model);
-    save_training_result(result, "loss.csv");
     free(result);
     clear_dataset(train);
     clear_dataset(test);
