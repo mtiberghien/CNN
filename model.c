@@ -38,7 +38,7 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     double invert_inputs_size = (double)1.0/inputs_size;
     for(int i=0; i<model->n_layers;i++)
     {
-        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, 0, &model->layers[i]);
+        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, invert_inputs_size, 0, &model->layers[i]);
     }
     return outputs;
 }
@@ -87,11 +87,11 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
                 main_indice--;
             }
             tensor* outputs = batch;
-
+            double invert_batch_size = (double)1/current_batch_size;
             //Current batch Forward pass
             for(int i=0;i<model->n_layers;i++)
             {
-                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, 1, &model->layers[i]);
+                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, invert_batch_size, 1, &model->layers[i]);
             }
             //sum of errors of current batch
             sum_errors = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
@@ -119,7 +119,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             double last_mean_error=last_error_sum/(result_indice - start_indice +1);
             result_indice++;
             time(&step);
-            printf("\033[2K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",trained,inputs_size, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
+            printf("\033[2K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",episode++,n_episodes, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
             fflush(stdout);
         }
         model->optimizer->t++;
