@@ -53,6 +53,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     result->loss = malloc(sizeof(double)*result->n_results);
     int result_indice=0;
     int mean_error_count = n_episodes/10;
+    double invert_output_size = (double)1/model->layers[model->n_layers-1].output_size;
     for(int i=0;i<inputs_size;i++)
     {
         indices[i]=i;
@@ -67,7 +68,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
         int current_batch_size = min(batch_size, remaining_size);
         int main_indice=inputs_size-1;
         double mean_error =0;
-        double sum_errors=0;
+        double loss=0;
         int trained =0;
         int episode=1;
         //Execute all batches of an epoch
@@ -93,23 +94,22 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             {
                 outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, invert_batch_size, 1, &model->layers[i]);
             }
-            //sum of errors of current batch
-            sum_errors = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
-            //Current batch Backward pass using sum of batch gradients
-            tensor* sum_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
+            //mean of errors of current batch
+            loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, invert_output_size, model->loss);
+            //Current batch Backward pass using mean of batch gradients
+            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
-                sum_gradients = model->layers[i].backward_propagation(sum_gradients, model->optimizer, &model->layers[i], i);
+                mean_gradients = model->layers[i].backward_propagation(mean_gradients, model->optimizer, &model->layers[i], i);
             }
-            clear_tensor(sum_gradients);
-            free(sum_gradients);
+            clear_tensor(mean_gradients);
+            free(mean_gradients);
             free(batch);
             free(truths_batch);
             remaining_size-=current_batch_size;
             trained+=current_batch_size;
-            mean_error = sum_errors/current_batch_size;
             current_batch_size = min(batch_size, remaining_size);
-            result->loss[result_indice]=mean_error;
+            result->loss[result_indice]=loss;
             int start_indice = result_indice<mean_error_count-1?0:(result_indice - mean_error_count+1);
             double last_error_sum = 0;
             for(int i=start_indice;i<=result_indice;i++)

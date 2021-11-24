@@ -22,4 +22,5 @@ int main(){
     free(result);
     clear_dataset(train);
     clear_dataset(test);
+    
 }

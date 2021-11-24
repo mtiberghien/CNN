@@ -72,7 +72,7 @@ layer* build_layer_FC(int output_size, activation* activation){
 }
 
 //Common forward propagation loop
-tensor* forward_propagation_loop(tensor* inputs, int batch_size, double invert_batch_size, short is_training, struct layer* layer)
+tensor* forward_propagation_loop(const tensor* inputs, int batch_size, double invert_batch_size, short is_training, struct layer* layer)
 {
     int output_size=layer->output_size;
     layer->is_training = is_training;
@@ -127,7 +127,7 @@ tensor* backward_propagation(tensor* mean_gradient, optimizer* optimizer, struct
 }
 
 //Forward propagation function for Fully Connected layer (perceptron)
-tensor* forward_calculation_FC(tensor* input, tensor* output, double invert_batch_size, layer* layer){
+tensor* forward_calculation_FC(const tensor* input, tensor* output, double invert_batch_size, layer* layer){
     //Loop into output tensor
     for(int i=0;i<layer->output_size;i++)
     {
