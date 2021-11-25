@@ -4,6 +4,7 @@
 #include "tensor.h"
 #include "optimizer.h"
 #include "activation.h"
+#include <stdio.h>
 
 typedef enum layer_type{FC} layer_type;
 
@@ -45,8 +46,10 @@ void clear_layer_input_output(layer*);
 void compile_layer(int input_size, layer*);
 tensor* forward_propagation_loop(const tensor* inputs, int batch_size, double invert_batch_size, short is_training, struct layer* layer);
 tensor* backward_propagation(tensor* gradients, optimizer* optimizer, struct layer* layer, int layer_index);
-layer* build_layer_FC(int output_size, activation* activation);
+layer* build_layer(layer_type type, int output_size, activation* activation);
+void build_layer_FC(layer* layer);
 tensor* forward_calculation_FC(const tensor* input, tensor* output, double invert_batch_size, layer* layer);
 tensor* backward_calculation_FC(tensor* gradient, tensor* gradient_previous, optimizer* optimizer, layer* layer, int layer_index);
-
+void save_layer(FILE *fp, layer* layer);
+layer* read_layer(FILE *fp);
 #endif

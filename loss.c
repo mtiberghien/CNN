@@ -10,11 +10,11 @@ double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, doub
     {
         for(int j=0;j<outputs[0].size;j++)
         {
-            errors+=invert_output_size*invert_batch_size*loss->loss(truths[i].v[j], outputs[i].v[j]);
+            errors+=invert_output_size*loss->loss(truths[i].v[j], outputs[i].v[j]);
         }
         
     }
-    return errors;
+    return errors*invert_batch_size;
 }
 
 
@@ -26,7 +26,7 @@ tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, dou
     {
         for(int j=0;j<outputs[0].size;j++)
         {
-            mean_gradients->v[j]+=invert_output_size*invert_batch_size*(loss->loss_prime(truths[i].v[j], outputs[i].v[j])/batch_size);
+            mean_gradients->v[j]+=invert_output_size*invert_batch_size*(loss->loss_prime(truths[i].v[j], outputs[i].v[j]));
         }
     }
     return mean_gradients;
@@ -79,4 +79,20 @@ loss* build_loss_mse()
     result->forward_error_loop= forward_error_loop;
     result->loss = loss_mse;
     result->loss_prime = loss_prime_mse;
+}
+
+void save_loss(FILE* fp, loss* loss)
+{
+    fprintf(fp, "loss:%d\n", loss->type);
+}
+
+loss* read_loss(FILE* fp)
+{
+    int type;
+    fscanf(fp, "loss:%d\n", &type);
+    if(type>=0)
+    {
+        return build_loss(type);
+    }
+    return NULL;
 }

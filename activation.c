@@ -129,3 +129,19 @@ activation* build_activation_softmax()
     result->activation_forward= activation_forward_softmax;
     return result;
 }
+
+void save_activation(FILE* fp, activation* activation)
+{
+    fprintf(fp, "activation:%d\n", activation!=NULL? activation->type:-1);
+}
+
+activation* read_activation(FILE* fp)
+{
+    int type;
+    fscanf(fp, "activation:%d\n", &type);
+    if(type>=0)
+    {
+        return build_activation(type);
+    }
+    return NULL;
+}

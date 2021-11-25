@@ -2,6 +2,7 @@
 #define LOSS_CNN
 
 #include "tensor.h"
+#include <stdio.h>
 
 typedef enum loss_type{CCE,MSE} loss_type;
 
@@ -25,4 +26,6 @@ double loss_prime_mse(double truth, double output);
 loss* build_loss(loss_type type);
 loss* build_loss_cce();
 loss* build_loss_mse();
+void save_loss(FILE* fp, loss* loss);
+loss* read_loss(FILE* fp);
 #endif

@@ -97,7 +97,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             //mean of errors of current batch
             loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, invert_output_size, model->loss);
             //Current batch Backward pass using mean of batch gradients
-            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
+            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
                 mean_gradients = model->layers[i].backward_propagation(mean_gradients, model->optimizer, &model->layers[i], i);
@@ -182,5 +182,46 @@ void save_training_result(training_result* result, char* filename)
             fprintf(fp,"%d;%f\n", i,result->loss[i]);
         }
     }
+    fclose(fp);
+}
+
+void save_model(model* model, char* filename)
+{
+    FILE * fp;
+    fp = fopen(filename, "w");
+    if(fp != NULL)
+    {
+        fprintf(fp, "n_layers:%d\n", model->n_layers);
+        for(int i=0;i<model->n_layers;i++)
+        {
+            save_layer(fp, &model->layers[i]);
+        }
+        save_optimizer(fp, model->optimizer);
+        save_loss(fp, model->loss);
+    }
+    fclose(fp);
+}
+
+model* read_model(char* filename)
+{
+    model* model = build_model();
+    FILE * fp;
+    fp = fopen(filename, "r");
+    int n_layers;
+    if(fp!= NULL)
+    {
+        fscanf(fp, "n_layers:%d\n", &n_layers);
+        for(int i=0;i<n_layers;i++)
+        {
+           layer* layer = read_layer(fp);
+           if(layer!=NULL)
+           {
+               model->add_layer(layer, model);
+           }
+        }
+        model->optimizer = read_optimizer(fp);
+        model->loss = read_loss(fp);
+    }
+    return model;
     fclose(fp);
 }

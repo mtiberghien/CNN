@@ -2,6 +2,7 @@
 #define OPTIMIZER_CNN
 
 #include "tensor.h"
+#include <stdio.h>
 
 typedef enum optimizer_type{GD, ADAM} optimizer_type;
 
@@ -33,4 +34,6 @@ void compile_default(int* layers_output_size, int n_layers, struct optimizer* op
 void compile_Adam(int* layers_output_size, int n_layers, struct optimizer* optimizer);
 void clear_optimizer_Adam(optimizer* optimizer);
 void clear_optimizer_default(optimizer* optimizer);
+void save_optimizer(FILE* fp, optimizer* optimizer);
+optimizer* read_optimizer(FILE* fp);
 #endif

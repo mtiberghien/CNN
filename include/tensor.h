@@ -1,6 +1,8 @@
 #ifndef CNN_TENSOR
 #define CNN_TENSOR
 
+#include <stdio.h>
+
 //The data structure used in a neural network
 typedef struct tensor{
     double* v;
@@ -21,5 +23,7 @@ tensor* to_categorical(char** labels, int n_labels);
 int arg_max(tensor* tensor);
 void apply_func(tensor* tensor, double(*func)(double));
 void mult_tensor_func(tensor* tensor_dest, tensor* tensor_source, double(*func)(double));
+void save_tensor(FILE* fp, tensor* tensor);
+void read_tensor(FILE* fp, tensor* tensor, int size);
 #endif
 

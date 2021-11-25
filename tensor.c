@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "float.h"
 #include <stdio.h>
+#include <string.h>
 #include "include/common.h"
 
 //Free memory of a tensor
@@ -113,6 +114,44 @@ int arg_max(tensor* tensor)
         }
     }
     return result;
+}
+
+void save_tensor(FILE* fp, tensor* tensor)
+{
+    for(int i=0;i<tensor->size;i++)
+    {
+        fprintf(fp, "%lf", tensor->v[i]);
+        if(i!=tensor->size-1)
+        {
+            fprintf(fp, ";");
+        }
+    }
+    fprintf(fp, "\n");
+}
+
+void read_tensor(FILE* fp, tensor* tensor, int size)
+{
+    initialize_tensor(tensor, size);
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    read = getline(&line, &len, fp);
+    if(read>1)
+    {
+        char delim[]=";";
+        int i=0;
+        char *ptr = strtok(line, delim);
+        while(ptr != NULL && i < size)
+        {
+            tensor->v[i]= strtod(ptr, NULL);
+            ptr = strtok(NULL, delim);
+            i++;
+        }
+        if(ptr!=NULL)
+        {
+            free(ptr);
+        }
+    }
 }
 
 

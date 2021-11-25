@@ -3,6 +3,7 @@
 
 #include "tensor.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef enum activation_type {RELU, TANH, SIGMOID, SOFTMAX} activation_type;
 
@@ -32,4 +33,6 @@ double tanh_prime(double x);
 double relu_prime(double x);
 double sigmoid(double x);
 double func_x_minus_x_square(double x);
+void save_activation(FILE* fp, activation* activation);
+activation* read_activation(FILE* fp);
 #endif

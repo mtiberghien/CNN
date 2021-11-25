@@ -18,7 +18,7 @@ optimizer* build_optimizer(optimizer_type type)
 {
     switch(type){
         case ADAM: return build_optimizer_Adam(1E-3,0.9,0.999,1E-7);
-        default: return build_optimizer_GD(1E-3);
+        default: return build_optimizer_GD(1E-2);
     }
 }
 
@@ -59,8 +59,8 @@ double apply_gradient_GD(double value, double gradient, int layer_index, int ten
 
 double apply_gradient_Adam(double value, double gradient, int layer_index, int tensor_index, optimizer* optimizer)
 {
-    (&optimizer->m[layer_index])->v[tensor_index] = (optimizer->beta_1 * optimizer->m[layer_index].v[tensor_index]) + (1 - optimizer->beta_1) * gradient;
-    (&optimizer->v[layer_index])->v[tensor_index] = (optimizer->beta_2 * optimizer->v[layer_index].v[tensor_index]) + (1 - optimizer->beta_2) * pow(gradient,(double)2.0);
+    optimizer->m[layer_index].v[tensor_index] = (optimizer->beta_1 * optimizer->m[layer_index].v[tensor_index]) + (1 - optimizer->beta_1) * gradient;
+    optimizer->v[layer_index].v[tensor_index] = (optimizer->beta_2 * optimizer->v[layer_index].v[tensor_index]) + (1 - optimizer->beta_2) * pow(gradient,(double)2.0);
     double mhat = optimizer->m[layer_index].v[tensor_index]/(1 - pow(optimizer->beta_1, (double)optimizer->t+1));
     double vhat = optimizer->v[layer_index].v[tensor_index]/(1 - pow(optimizer->beta_2, (double)optimizer->t+1));
     return value - ((optimizer->alpha * mhat)/(sqrt(vhat)+optimizer->eps));
@@ -82,4 +82,47 @@ void compile_Adam(int* layers_output_size, int n_layers, struct optimizer* optim
         initialize_tensor(&optimizer->m[i], layers_output_size[i]);
         initialize_tensor(&optimizer->v[i], layers_output_size[i]);
     }
+}
+
+void save_optimizer(FILE* fp, optimizer* optimizer)
+{
+    fprintf(fp, "n_layers:%d, type:%d, alpha:%lf, beta_1:%lf, beta_2:%lf, eps:%lf\n", optimizer->n_layers, optimizer->type, optimizer->alpha, optimizer->beta_1, optimizer->beta_2, optimizer->eps);
+    if(optimizer->type==ADAM)
+    {
+        for(int i=0;i<optimizer->n_layers;i++)
+        {
+            fprintf(fp, "size:%d\n", optimizer->m[i].size);
+            save_tensor(fp, &optimizer->m[i]);
+            save_tensor(fp, &optimizer->v[i]);
+        }
+    }
+}
+
+optimizer* read_optimizer(FILE* fp)
+{
+    int n_layers, type, size;
+    double alpha, beta_1,beta_2,eps;
+    fscanf(fp, "n_layers:%d, type:%d, alpha:%lf, beta_1:%lf, beta_2:%lf, eps:%lf\n", &n_layers, &type, &alpha, &beta_1, &beta_2, &eps);
+    if(type>=0)
+    {
+        optimizer* optimizer = build_optimizer(type);
+        optimizer->alpha=alpha;
+        optimizer->beta_1=beta_1;
+        optimizer->beta_2=beta_2;
+        optimizer->eps=eps == 0 ? 1E-7:eps;
+        optimizer->m=(tensor*)malloc(sizeof(tensor)*n_layers);
+        optimizer->v=(tensor*)malloc(sizeof(tensor)*n_layers);
+        optimizer->n_layers = n_layers;
+        if(type==ADAM)
+        {
+            for(int i=0;i<n_layers;i++)
+            {
+                fscanf(fp, "size:%d\n", &size);
+                read_tensor(fp, &optimizer->m[i], size);
+                read_tensor(fp, &optimizer->v[i], size);
+            }
+        }
+        return optimizer;
+    }
+    return NULL;
 }

@@ -32,5 +32,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
 model* build_model();
 void clear_model(model* model);
 void save_training_result(training_result* result, char* filename);
+void save_model(model* model, char* filename);
+model* read_model(char* filename);
 
 #endif
