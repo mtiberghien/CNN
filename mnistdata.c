@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "include/mnistdata.h"
 #include "include/tensor.h"
+#include "include/progression.h"
 
 dataset* getMNISTData(int limit, short test)
 {
@@ -11,7 +12,9 @@ dataset* getMNISTData(int limit, short test)
     char path[100]= "../../datasets/MNIST/";
     char* filename = test ? "mnist_test.csv":"mnist_train.csv";
     char* filepath = strcat(path, filename);
-    printf("reading %s...\n", filename);
+    char header[100]="reading ";
+
+    progression* progression = build_progression(limit, strcat(header, filename) );
     size_t len = 0;
     ssize_t read;
     tensor * features = (tensor*)malloc(sizeof(tensor));
@@ -24,7 +27,7 @@ dataset* getMNISTData(int limit, short test)
     int ln = 0;
     double norm_factor = ((double)1)/255;
     //skip headers
-    getline(&line, &len, fp); 
+    getline(&line, &len, fp);
     while ((read = getline(&line, &len, fp)) != -1) {
         if(read>1){
             features = (tensor*) realloc(features, (ln+1) * sizeof(tensor));
@@ -49,16 +52,17 @@ dataset* getMNISTData(int limit, short test)
                 column++;
             }
             ln++;
+            progression->call_back(progression);
             if(limit==ln)
             {
                 break;
             }
         }
     }
-
     fclose(fp);
     if (line)
         free(line);
+    clear_progression(progression);
     printf("read %d lines from %s.\n", ln, filename);
     result->features = features;
     result->labels = labels;

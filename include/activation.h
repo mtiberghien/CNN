@@ -15,18 +15,18 @@ typedef struct activation{
     double (*activation_func_prime)(double);
     //Specific activation derivative calculation
     tensor* (*activation_forward)(tensor* activation_input, struct activation* activation);
-    tensor* (*activation_backward_propagation)(tensor* activation_input, tensor* gradient, tensor* output, struct activation* activation);
+    tensor* (*activation_backward_propagation)(const tensor* activation_input, tensor* gradient, tensor* output, struct activation* activation);
 } activation;
 
 activation* build_activation(activation_type type);
 tensor* activation_forward(tensor* activation_input, activation* activation);
-tensor* activation_backward_propagation(tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
+tensor* activation_backward_propagation(const tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
 activation* build_activation_relu();
 activation* build_activation_tanh();
 activation* build_activation_sigmoid();
-tensor* backward_propagation_sigmoid(tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
+tensor* backward_propagation_sigmoid(const tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
 tensor* activation_func_softmax(tensor* input, activation* activation);
-tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
+tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gradient,tensor* output, activation* activation);
 activation* build_activation_softmax();
 double relu(double x);
 double tanh_prime(double x);

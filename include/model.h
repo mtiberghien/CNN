@@ -5,6 +5,7 @@
 #include "layer.h"
 #include "loss.h"
 #include "optimizer.h"
+#include "progression.h"
 
 
 typedef struct training_result{
@@ -34,5 +35,6 @@ void clear_model(model* model);
 void save_training_result(training_result* result, char* filename);
 void save_model(model* model, char* filename);
 model* read_model(char* filename);
+void progression_callback(int step, int total_step, char* header);
 
 #endif

@@ -15,5 +15,7 @@ double evaluate_accuracy(tensor* truth, tensor* prediction, int n_predictions)
 
 double evaluate_dataset_accuracy(dataset* data, model* model)
 {
-    return evaluate_accuracy(data->labels_categorical, model->predict(data->features, data->n_entries, model), data->n_entries);
+    tensor* predictions = model->predict(data->features, data->n_entries, model);
+    return evaluate_accuracy(data->labels_categorical, predictions, data->n_entries);
+    clear_tensors(predictions, data->n_entries);
 }

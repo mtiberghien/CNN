@@ -3,7 +3,7 @@
 #include "include/layer.h"
 #include "math.h"
 
-double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, double invert_batch_size, double invert_output_size, loss* loss)
+double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, double invert_output_size, loss* loss)
 {
     double errors = 0;
     for(int i=0;i<batch_size;i++)
@@ -14,22 +14,23 @@ double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, doub
         }
         
     }
-    return errors*invert_batch_size;
+    return errors/batch_size;
 }
 
 
-tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_batch_size, double invert_output_size, loss* loss)
+tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, loss* loss)
 {
-    tensor* mean_gradients = (tensor*)malloc(sizeof(tensor));
-    initialize_tensor(mean_gradients, outputs[0].size);
+    tensor* gradients = (tensor*)malloc(sizeof(tensor)*batch_size);
     for(int i=0;i<batch_size;i++)
     {
+        tensor* gradient = &gradients[i];
+        initialize_tensor(gradient, outputs[0].size);
         for(int j=0;j<outputs[0].size;j++)
         {
-            mean_gradients->v[j]+=invert_output_size*invert_batch_size*(loss->loss_prime(truths[i].v[j], outputs[i].v[j]));
+            gradient->v[j]=invert_output_size*(loss->loss_prime(truths[i].v[j], outputs[i].v[j]));
         }
     }
-    return mean_gradients;
+    return gradients;
 }
 
 double loss_cce(double truth, double output)

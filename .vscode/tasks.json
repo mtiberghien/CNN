@@ -10,7 +10,8 @@
 				"${workspaceFolder}/*.c",
 				"-o",
 				"${workspaceFolder}/bin/${fileBasenameNoExtension}",
-				"-lm"
+				"-lm",
+				"-fopenmp"
 			],
 			"options": {
 				"cwd": "${workspaceFolder}"

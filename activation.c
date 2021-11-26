@@ -34,7 +34,7 @@ tensor* activation_forward(tensor* input, activation* activation)
     return input;
 }
 
-tensor* activation_backward_propagation(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
+tensor* activation_backward_propagation(const tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     mult_tensor_func(gradient, activation_input, activation->activation_func_prime);
     return gradient;
@@ -60,7 +60,7 @@ activation* build_activation_sigmoid()
     result->activation_func=sigmoid;
     return result;
 }
-tensor* backward_propagation_sigmoid(tensor* activation_input, tensor* gradient,tensor* output, activation* activation)
+tensor* backward_propagation_sigmoid(const tensor* activation_input, tensor* gradient,tensor* output, activation* activation)
 {
     mult_tensor_func(gradient, output, func_x_minus_x_square);
     return gradient;
@@ -102,7 +102,7 @@ activation* build_activation_tanh()
     return result;
 }
 
-tensor* backward_propagation_softmax(tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
+tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     tensor gradient_product;
     initialize_tensor(&gradient_product, gradient->size);

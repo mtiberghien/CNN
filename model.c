@@ -35,11 +35,12 @@ void remove_layer(int index, model* model)
 tensor* predict(tensor* inputs, int inputs_size, model* model)
 {
     tensor* outputs = inputs;
-    double invert_inputs_size = (double)1.0/inputs_size;
+    progression* progression = build_progression(inputs_size*model->n_layers, "predicting");
     for(int i=0; i<model->n_layers;i++)
     {
-        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, invert_inputs_size, 0, &model->layers[i]);
+        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, 0, &model->layers[i], progression);
     }
+    clear_progression(progression);
     return outputs;
 }
 
@@ -88,22 +89,21 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
                 main_indice--;
             }
             tensor* outputs = batch;
-            double invert_batch_size = (double)1/current_batch_size;
             //Current batch Forward pass
             for(int i=0;i<model->n_layers;i++)
             {
-                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, invert_batch_size, 1, &model->layers[i]);
+                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, 1, &model->layers[i], NULL);
             }
             //mean of errors of current batch
-            loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, invert_output_size, model->loss);
+            loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->loss);
             //Current batch Backward pass using mean of batch gradients
-            tensor* mean_gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_batch_size, model->layers[model->n_layers-1].invert_output_size, model->loss);
+            tensor* gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
-                mean_gradients = model->layers[i].backward_propagation(mean_gradients, model->optimizer, &model->layers[i], i);
+                gradients = model->layers[i].backward_propagation_loop(gradients, model->optimizer, &model->layers[i], i);
             }
-            clear_tensor(mean_gradients);
-            free(mean_gradients);
+            clear_tensors(gradients, current_batch_size);
+            free(gradients);
             free(batch);
             free(truths_batch);
             remaining_size-=current_batch_size;
@@ -119,7 +119,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             double last_mean_error=last_error_sum/(result_indice - start_indice +1);
             result_indice++;
             time(&step);
-            printf("\033[2K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",episode++,n_episodes, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
+            printf("\033[K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",episode++,n_episodes, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
             fflush(stdout);
         }
         model->optimizer->t++;

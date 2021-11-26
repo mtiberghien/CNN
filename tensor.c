@@ -12,6 +12,7 @@ void clear_tensor(tensor* tensor){
 
 //Free memory for a batch of tensors
 void clear_tensors(tensor* tensors, int n_tensor){
+    #pragma omp parallel for
     for(int i=0;i<n_tensor;i++){
         clear_tensor(&tensors[i]);
     }
@@ -19,14 +20,16 @@ void clear_tensors(tensor* tensors, int n_tensor){
 
 void apply_func(tensor* tensor, double(*func)(double))
 {
+    #pragma omp parallel for
     for(int i=0;i<tensor->size;i++)
     {
         tensor->v[i]=func(tensor->v[i]);
     }
 }
 
-void mult_tensor_func(tensor* tensor_dest, tensor* tensor_source, double(*func)(double))
+void mult_tensor_func(tensor* tensor_dest,const tensor* tensor_source, double(*func)(double))
 {
+    #pragma omp parallel for
     for(int i=0;i<tensor_dest->size;i++)
     {
         tensor_dest->v[i]*=func(tensor_source->v[i]);

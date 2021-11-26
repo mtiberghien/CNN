@@ -10,12 +10,12 @@ typedef struct loss{
     loss_type type;
     double (*loss)(double truth, double output);
     double (*loss_prime)(double truth, double output);
-    double (*forward_error_loop)(tensor* truths, tensor* outputs, int batch_size, double invert_batch_size, double invert_output_size, struct loss* loss);
-    tensor* (*backward_error_loop)(tensor* truths, tensor* outputs, int batch_size, double invert_batch_size, double invert_output_size, struct loss* loss);
+    double (*forward_error_loop)(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, struct loss* loss);
+    tensor* (*backward_error_loop)(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, struct loss* loss);
 } loss;
 
-double forward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_batch_size, double invert_output_size, loss* loss);
-tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_batch_size, double invert_output_size, loss* loss);
+double forward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, loss* loss);
+tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, loss* loss);
 
 double loss_cce(double truth, double output);
 double loss_prime_cce(double truth, double output);
