@@ -9,6 +9,7 @@
 //Clear memory of temporary stored inputs and outputs
 void clear_layer_training_memory_FC(layer *layer)
 {
+    #pragma omp parallel for
     for (int i = 0; i < layer->batch_size; i++)
     {
         clear_tensor(&layer->outputs[i]);
@@ -19,13 +20,14 @@ void clear_layer_training_memory_FC(layer *layer)
     free(layer->previous_gradients);
     clear_tensor(&layer->biases_gradients);
     free(layer->activation_input);
-    free(layer->layer_input);
+    free(layer->layer_inputs);
     free(layer->outputs);
     free(layer->weights_gradients);
 }
 
 void clear_layer_predict_memory_FC(layer* layer)
 {
+    #pragma omp parallel for
     for (int i = 0; i < layer->batch_size; i++)
     {
         clear_tensor(&layer->outputs[i]);
@@ -68,35 +70,37 @@ void compile_layer(int input_size, layer *layer)
 
 void init_memory_training_FC(layer* layer)
 {
-    struct layer l =*layer;
+    int input_size = layer->input_size;
+    int output_size = layer->output_size;
     int batch_size = layer->batch_size;
+    layer->layer_inputs=(tensor*) malloc(sizeof(tensor)*batch_size);
     layer->activation_input = (tensor *)malloc(sizeof(tensor)*batch_size);
-    layer->layer_input = (tensor *)malloc(sizeof(tensor)*batch_size);
     layer->previous_gradients = (tensor *)malloc(sizeof(tensor)*batch_size);
-    initialize_tensor(l.previous_gradients, l.input_size);
-    layer->weights_gradients =(tensor*)malloc(sizeof(tensor)*l.output_size);
-    initialize_tensor(&layer->biases_gradients, l.output_size);
-    for(int i=0;i<l.output_size;i++)
+    layer->weights_gradients =(tensor*)malloc(sizeof(tensor)*output_size);
+    initialize_tensor(layer->previous_gradients, input_size);
+    initialize_tensor(&layer->biases_gradients, output_size);
+    for(int i=0;i<output_size;i++)
     {
-        initialize_tensor(l.weights_gradients, l.input_size);
+        initialize_tensor(&layer->weights_gradients[i], input_size);
     }
     layer->outputs = malloc(sizeof(tensor) * batch_size);
+    #pragma omp parallel
     for(int i=0;i<batch_size;i++)
     {
-        initialize_tensor(&layer->outputs[i], layer->output_size);
-        initialize_tensor(&layer->activation_input[i], layer->output_size);
-        initialize_tensor(&layer->previous_gradients[i], layer->input_size);
+        initialize_tensor(&layer->outputs[i], output_size);
+        initialize_tensor(&layer->activation_input[i], output_size);
+        initialize_tensor(&layer->previous_gradients[i], input_size);
     }
 }
 
 void init_memory_predict_FC(layer* layer)
 {
     int batch_size = layer->batch_size;
-    struct layer l =*layer;
+    int output_size = layer->output_size;
     layer->outputs = malloc(sizeof(tensor) * batch_size);
     for(int i=0;i<batch_size;i++)
     {
-        initialize_tensor(&layer->outputs[i], layer->output_size);
+        initialize_tensor(&layer->outputs[i], output_size);
     }
 }
 
@@ -104,15 +108,18 @@ void init_memory_predict_FC(layer* layer)
 tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     int output_size = layer->output_size;
-    tensor* activation_input;
+    int input_size = layer->input_size;
     // Loop into input batch
+    #pragma omp parallel for
     for (int i = 0; i < batch_size; i++)
     {
         //Output tensor memory allocation
         tensor *output = &layer->outputs[i];
-        layer->layer_input[i]=inputs[i];
+        tensor* activation_input = &layer->activation_input[i];
+        const tensor* input = &inputs[i];
+        layer->layer_inputs[i]=inputs[i];
         //Execute specific forward propagation
-        layer->forward_calculation_training(&inputs[i], output, activation_input, layer);
+        layer->forward_calculation_training(input, output, activation_input, layer);
         if(progression)
         {
             progression->call_back(progression);
@@ -124,8 +131,8 @@ tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, 
 tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     int output_size = layer->output_size;
-    tensor* activation_input;
     // Loop into input batch
+    #pragma omp parallel for shared(progression)
     for (int i = 0; i < batch_size; i++)
     {
         //Output tensor memory allocation
@@ -146,25 +153,32 @@ tensor *backward_propagation_loop(tensor *gradients, optimizer *optimizer, struc
     int output_size = layer->output_size;
     int input_size = layer->input_size;
     int batch_size = layer->batch_size;
+    #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
         tensor* gradient = &gradients[i];
         tensor* gradient_previous = &layer->previous_gradients[i];
+        tensor* output = &layer->outputs[i];
         if (layer->activation)
         {
             //Back propagate the gradient error tensor
-            gradient = layer->activation->activation_backward_propagation(&layer->activation_input[i], gradient, &layer->outputs[i], layer->activation);
+            gradient = layer->activation->activation_backward_propagation(&layer->activation_input[i], gradient, output, layer->activation);
         }
         //biases_gradient is the sum of batch gradients
         for(int j=0;j<output_size;j++)
         {
+            output->v[j]=0;
             double gradient_j = gradient->v[j];
+            gradient->v[j]=0;
             layer->biases_gradients.v[j]+=gradient_j;
             for (int k = 0; k < input_size; k++)
             {
-                double input_k = layer->layer_input[i].v[k];
-                //Calculate Previous layer gradient error
-                gradient_previous->v[k] += layer->weights[j].v[k] * gradient_j;
+                double input_k = layer->layer_inputs[i].v[k];
+                if(layer_index>0)
+                {
+                    //Calculate Previous layer gradient error
+                    gradient_previous->v[k] += layer->weights[j].v[k] * gradient_j;
+                }
                 //Gradient weights is the sum of batch gradient multiplied by batch input;
                 layer->weights_gradients[j].v[k] += input_k*gradient_j;
             }
@@ -279,9 +293,6 @@ void build_layer_FC(layer *layer)
     layer->init_training_memory = init_memory_training_FC;
     layer->clear_predict_memory = clear_layer_predict_memory_FC;
     layer->clear_training_memory = clear_layer_training_memory_FC;
-    layer->forward_propagation_training_loop = forward_propagation_training_loop;
-    layer->forward_propagation_predict_loop = forward_propagation_predict_loop;
-    layer->backward_propagation_loop = backward_propagation_loop;
     layer->forward_calculation_training = forward_calculation_training_FC;
     layer->forward_calculation_predict = forward_calculation_predict_FC;
     layer->backward_calculation = backward_calculation_FC;
@@ -295,6 +306,9 @@ layer *build_layer(layer_type type, int output_size, activation *activation)
     layer->output_size = output_size;
     //Store activation function
     layer->activation = activation;
+    layer->forward_propagation_training_loop = forward_propagation_training_loop;
+    layer->forward_propagation_predict_loop = forward_propagation_predict_loop;
+    layer->backward_propagation_loop = backward_propagation_loop;
     switch (type)
     {
     default:

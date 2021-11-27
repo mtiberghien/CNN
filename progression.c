@@ -5,10 +5,13 @@
 
 void progression_callback(progression* progression)
 {
-    progression->step++;
-    double percentage = (double)(progression->step*100)/progression->total_steps;
-    printf("\033[K\r%s: %.2f%%", progression->header, percentage);
-    fflush(stdout);
+    #pragma omp critical
+    {
+        progression->step++;
+        double percentage = (double)(progression->step*100)/progression->total_steps;
+        printf("\033[K\r%s: %.2f%%", progression->header, percentage);
+        fflush(stdout);
+    }
 }
 
 void progression_done(progression* progression)

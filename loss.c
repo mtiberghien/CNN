@@ -6,6 +6,7 @@
 double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, double invert_output_size, loss* loss)
 {
     double errors = 0;
+    #pragma omp parallel for reduction(+:errors)
     for(int i=0;i<batch_size;i++)
     {
         for(int j=0;j<outputs[0].size;j++)
@@ -20,10 +21,12 @@ double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, doub
 
 tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, loss* loss)
 {
+    int size = outputs[0].size;
+    #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
         tensor* gradient = &loss->gradients[i];
-        for(int j=0;j<outputs[0].size;j++)
+        for(int j=0;j<size;j++)
         {
             gradient->v[j]=invert_output_size*(loss->loss_prime(truths[i].v[j], outputs[i].v[j]));
         }
@@ -67,22 +70,28 @@ void clear_training_memory(loss* loss)
     clear_tensors(loss->gradients, loss->batch_size);
 }
 
-loss* build_loss_cce()
+loss* create_default_loss(loss_type type)
 {
     loss* result = (loss*)malloc(sizeof(loss));
-    result->type = CCE;
+    result->type = type;
     result->backward_error_loop = backward_error_loop;
     result->forward_error_loop= forward_error_loop;
+    result->backward_error_loop = backward_error_loop;
+    result->forward_error_loop= forward_error_loop;
+    result->init_training_memory=init_training_memory;
+    result->clear_training_memory=clear_training_memory;
+}
+
+loss* build_loss_cce()
+{
+    loss* result = create_default_loss(CCE);
     result->loss = loss_cce;
     result->loss_prime = loss_prime_cce;
 }
 
 loss* build_loss_mse()
 {
-    loss* result = (loss*)malloc(sizeof(loss));
-    result->type = MSE;
-    result->backward_error_loop = backward_error_loop;
-    result->forward_error_loop= forward_error_loop;
+    loss* result = create_default_loss(MSE);
     result->loss = loss_mse;
     result->loss_prime = loss_prime_mse;
 }

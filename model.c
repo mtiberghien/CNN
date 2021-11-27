@@ -36,8 +36,9 @@ void init_model_predict_memory(int batch_size, model* model)
 {
     for(int i=0;i<model->n_layers;i++)
     {
-        (&model->layers[i])->batch_size = batch_size;
-        model->layers[i].init_predict_memory(&model->layers[i]);
+        layer* layer = &model->layers[i];
+        layer->batch_size = batch_size;
+        layer->init_predict_memory(layer);
     }
 }
 
@@ -58,7 +59,6 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     {
         outputs = model->layers[i].forward_propagation_predict_loop(outputs, inputs_size, &model->layers[i], progression);
     }
-    clear_model_predict_memory(model);
     clear_progression(progression);
     return outputs;
 }
@@ -67,8 +67,9 @@ void init_model_training_memory(int batch_size, model* model)
 {
     for(int i=0;i<model->n_layers;i++)
     {
-        (&model->layers[i])->batch_size = batch_size;
-        model->layers[i].init_training_memory(&model->layers[i]);
+        layer* layer = &model->layers[i];
+        layer->batch_size = batch_size;
+        layer->init_training_memory(layer);
     }
     model->loss->init_training_memory(batch_size, model->layers[model->n_layers-1].output_size, model->loss);
 }
@@ -117,6 +118,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             //Initialize random batch without replace
             tensor* batch = (tensor*)malloc(sizeof(tensor)*current_batch_size);
             tensor* truths_batch = (tensor*)malloc(sizeof(tensor)*current_batch_size);
+            #pragma omp parallel for
             for(int i=0;i<current_batch_size;i++)
             {
                 int random_indice =((double)rand() / (double)RAND_MAX)*main_indice;
@@ -141,8 +143,6 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             {
                 gradients = model->layers[i].backward_propagation_loop(gradients, model->optimizer, &model->layers[i], i);
             }
-            clear_tensors(gradients, current_batch_size);
-            free(gradients);
             free(batch);
             free(truths_batch);
             remaining_size-=current_batch_size;
@@ -151,6 +151,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             result->loss[result_indice]=loss;
             int start_indice = result_indice<mean_error_count-1?0:(result_indice - mean_error_count+1);
             double last_error_sum = 0;
+            #pragma omp parallel for reduction(+:last_error_sum)
             for(int i=start_indice;i<=result_indice;i++)
             {
                 last_error_sum+=result->loss[i];

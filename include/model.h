@@ -25,16 +25,11 @@ typedef struct model{
     loss* loss;
 } model;
 
-void compile(int input_size, optimizer* optimizer, loss* loss, model* model);
-void add_layer(layer* layer, model* model);
-void remove_layer(int index, model* model);
-tensor* predict(tensor* inputs, int inputs_size, model* model);
-training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model);
+
 model* build_model();
 void clear_model(model* model);
 void save_training_result(training_result* result, char* filename);
 void save_model(model* model, char* filename);
 model* read_model(char* filename);
-void progression_callback(int step, int total_step, char* header);
-
+void clear_model_predict_memory(model* model);
 #endif

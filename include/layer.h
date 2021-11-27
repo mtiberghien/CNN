@@ -11,9 +11,8 @@ typedef enum layer_type{FC} layer_type;
 
 //Represent a layer of a sequential neural network
 typedef struct layer{
-    short is_training;
     tensor* activation_input;
-    tensor* layer_input;
+    tensor* layer_inputs;
     //Stores the weight matrix as an array of tensor
     tensor* weights;
     //Stores the biases

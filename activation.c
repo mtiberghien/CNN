@@ -40,41 +40,10 @@ tensor* activation_backward_propagation(const tensor* activation_input, tensor* 
     return gradient;
 }
 
-activation* build_activation_relu()
-{
-    activation* result = (activation*) malloc(sizeof(activation));
-    result->type = RELU;
-    result->activation_backward_propagation=activation_backward_propagation;
-    result->activation_forward = activation_forward;
-    result->activation_func=relu;
-    result->activation_func_prime=relu_prime;
-    return result;
-}
-
-activation* build_activation_sigmoid()
-{
-    activation* result = (activation*) malloc(sizeof(activation));
-    result->type = SIGMOID;
-    result->activation_backward_propagation=backward_propagation_sigmoid;
-    result->activation_forward = activation_forward;
-    result->activation_func=sigmoid;
-    return result;
-}
 tensor* backward_propagation_sigmoid(const tensor* activation_input, tensor* gradient,tensor* output, activation* activation)
 {
     mult_tensor_func(gradient, output, func_x_minus_x_square);
     return gradient;
-}
-
-activation* build_activation(activation_type type)
-{
-    switch(type){
-        case RELU: return build_activation_relu();
-        case SOFTMAX: return build_activation_softmax();
-        case TANH: return build_activation_tanh();
-        case SIGMOID: return build_activation_sigmoid();
-        default: return NULL;
-    }
 }
 
 tensor* activation_forward_softmax(tensor* input, activation* activation)
@@ -121,13 +90,48 @@ tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gra
     return gradient;
 }
 
-activation* build_activation_softmax()
+activation* build_default_activation(activation_type type)
 {
     activation* result = (activation*) malloc(sizeof(activation));
-    result->type = SOFTMAX;
+    result->type = type;
+}
+
+activation* build_activation_softmax()
+{
+    activation* result = build_default_activation(SOFTMAX);
     result->activation_backward_propagation=backward_propagation_softmax;
     result->activation_forward= activation_forward_softmax;
     return result;
+}
+
+activation* build_activation_relu()
+{
+    activation* result = build_default_activation(RELU);
+    result->activation_backward_propagation=activation_backward_propagation;
+    result->activation_forward = activation_forward;
+    result->activation_func=relu;
+    result->activation_func_prime=relu_prime;
+    return result;
+}
+
+activation* build_activation_sigmoid()
+{
+    activation* result = build_default_activation(SIGMOID);
+    result->activation_backward_propagation=backward_propagation_sigmoid;
+    result->activation_forward = activation_forward;
+    result->activation_func=sigmoid;
+    return result;
+}
+
+activation* build_activation(activation_type type)
+{
+    switch(type){
+        case RELU: return build_activation_relu();
+        case SOFTMAX: return build_activation_softmax();
+        case TANH: return build_activation_tanh();
+        case SIGMOID: return build_activation_sigmoid();
+        default: return NULL;
+    }
 }
 
 void save_activation(FILE* fp, activation* activation)
