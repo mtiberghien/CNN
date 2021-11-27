@@ -32,21 +32,60 @@ void remove_layer(int index, model* model)
     }
 }
 
+void init_model_predict_memory(int batch_size, model* model)
+{
+    for(int i=0;i<model->n_layers;i++)
+    {
+        (&model->layers[i])->batch_size = batch_size;
+        model->layers[i].init_predict_memory(&model->layers[i]);
+    }
+}
+
+void clear_model_predict_memory(model* model)
+{
+    for(int i=0;i<model->n_layers;i++)
+    {
+        model->layers[i].clear_predict_memory(&model->layers[i]);
+    }
+}
+
 tensor* predict(tensor* inputs, int inputs_size, model* model)
 {
     tensor* outputs = inputs;
+    init_model_predict_memory(inputs_size, model);
     progression* progression = build_progression(inputs_size*model->n_layers, "predicting");
     for(int i=0; i<model->n_layers;i++)
     {
-        outputs = model->layers[i].forward_propagation_loop(outputs, inputs_size, 0, &model->layers[i], progression);
+        outputs = model->layers[i].forward_propagation_predict_loop(outputs, inputs_size, &model->layers[i], progression);
     }
+    clear_model_predict_memory(model);
     clear_progression(progression);
     return outputs;
+}
+
+void init_model_training_memory(int batch_size, model* model)
+{
+    for(int i=0;i<model->n_layers;i++)
+    {
+        (&model->layers[i])->batch_size = batch_size;
+        model->layers[i].init_training_memory(&model->layers[i]);
+    }
+    model->loss->init_training_memory(batch_size, model->layers[model->n_layers-1].output_size, model->loss);
+}
+
+void clear_model_training_memory(model* model)
+{
+    for(int i=0;i<model->n_layers;i++)
+    {
+        model->layers[i].clear_training_memory(&model->layers[i]);
+    }
+    model->loss->clear_training_memory(model->loss);
 }
 
 training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model)
 {
     //Random indices support
+    init_model_training_memory(batch_size, model);
     int* indices = malloc(sizeof(int)*inputs_size);
     training_result* result = (training_result*)malloc(sizeof(training_result));
     int n_episodes = (inputs_size/batch_size + (inputs_size%batch_size == 0?0:1));
@@ -92,7 +131,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             //Current batch Forward pass
             for(int i=0;i<model->n_layers;i++)
             {
-                outputs = model->layers[i].forward_propagation_loop(outputs, current_batch_size, 1, &model->layers[i], NULL);
+                outputs = model->layers[i].forward_propagation_training_loop(outputs, current_batch_size, &model->layers[i], NULL);
             }
             //mean of errors of current batch
             loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->loss);
@@ -125,6 +164,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
         model->optimizer->t++;
         printf("\n");
     }
+    clear_model_training_memory(model);
     free(indices);
     return result;
 }
