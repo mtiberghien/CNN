@@ -84,7 +84,7 @@ void init_memory_training_FC(layer* layer)
         initialize_tensor(&layer->weights_gradients[i], input_size);
     }
     layer->outputs = malloc(sizeof(tensor) * batch_size);
-    #pragma omp parallel
+    #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
         initialize_tensor(&layer->outputs[i], output_size);
@@ -98,6 +98,7 @@ void init_memory_predict_FC(layer* layer)
     int batch_size = layer->batch_size;
     int output_size = layer->output_size;
     layer->outputs = malloc(sizeof(tensor) * batch_size);
+    #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
         initialize_tensor(&layer->outputs[i], output_size);
@@ -120,12 +121,31 @@ tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, 
         layer->layer_inputs[i]=inputs[i];
         //Execute specific forward propagation
         layer->forward_calculation_training(input, output, activation_input, layer);
-        if(progression)
-        {
-            progression->call_back(progression);
-        }
     }
     return layer->outputs;
+}
+
+tensor *forward_calculation_training_FC(const tensor *input, tensor *output, tensor* activation_input, layer *layer)
+{
+    //Loop into output tensor
+    for (int i = 0; i < layer->output_size; i++)
+    {
+        //Loop into input tensor
+        for (int j = 0; j < layer->input_size; j++)
+        {
+            //sum weighted input element using weights matrix
+            output->v[i] += layer->weights[i].v[j] * (input->v[j]);
+        }
+        //Add bias
+        output->v[i] += layer->biases.v[i];
+        //Store the activation input
+        activation_input->v[i] = output->v[i];
+    }
+    if (layer->activation)
+    {
+        //Execute activation function and return output tensor
+        output = layer->activation->activation_forward(output, layer->activation);
+    }
 }
 
 tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
@@ -145,6 +165,28 @@ tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, s
         }
     }
     return layer->outputs;
+}
+
+//Forward propagation function for Fully Connected layer (perceptron)
+tensor *forward_calculation_predict_FC(const tensor *input, tensor *output, layer *layer)
+{
+    //Loop into output tensor
+    for (int i = 0; i < layer->output_size; i++)
+    {
+        //Loop into input tensor
+        for (int j = 0; j < layer->input_size; j++)
+        {
+            //sum weighted input element using weights matrix
+            output->v[i] += layer->weights[i].v[j] * (input->v[j]);
+        }
+        //Add bias
+        output->v[i] += layer->biases.v[i];
+    }
+    if (layer->activation)
+    {
+        //Execute activation function and return output tensor
+        output = layer->activation->activation_forward(output, layer->activation);
+    }
 }
 
 //Common backward propagation loop
@@ -186,51 +228,6 @@ tensor *backward_propagation_loop(tensor *gradients, optimizer *optimizer, struc
     }
     layer->backward_calculation(&layer->biases_gradients, layer->weights_gradients, optimizer, layer, layer_index);
     return layer->previous_gradients;
-}
-
-tensor *forward_calculation_training_FC(const tensor *input, tensor *output, tensor* activation_input, layer *layer)
-{
-    //Loop into output tensor
-    for (int i = 0; i < layer->output_size; i++)
-    {
-        //Loop into input tensor
-        for (int j = 0; j < layer->input_size; j++)
-        {
-            //sum weighted input element using weights matrix
-            output->v[i] += layer->weights[i].v[j] * (input->v[j]);
-        }
-        //Add bias
-        output->v[i] += layer->biases.v[i];
-        //Store the activation input
-        activation_input->v[i] = output->v[i];
-    }
-    if (layer->activation)
-    {
-        //Execute activation function and return output tensor
-        output = layer->activation->activation_forward(output, layer->activation);
-    }
-}
-
-//Forward propagation function for Fully Connected layer (perceptron)
-tensor *forward_calculation_predict_FC(const tensor *input, tensor *output, layer *layer)
-{
-    //Loop into output tensor
-    for (int i = 0; i < layer->output_size; i++)
-    {
-        //Loop into input tensor
-        for (int j = 0; j < layer->input_size; j++)
-        {
-            //sum weighted input element using weights matrix
-            output->v[i] += layer->weights[i].v[j] * (input->v[j]);
-        }
-        //Add bias
-        output->v[i] += layer->biases.v[i];
-    }
-    if (layer->activation)
-    {
-        //Execute activation function and return output tensor
-        output = layer->activation->activation_forward(output, layer->activation);
-    }
 }
 
 //Backward propagation function for Fully Connected layer (perceptron)

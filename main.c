@@ -9,6 +9,7 @@
 #include "omp.h"
 
 int main(){
+    omp_set_num_threads(10);
     char* filename = "save/model2.txt";
     dataset* train = getMNISTData(60000, 0);
     dataset* test = getMNISTData(10000, 1);

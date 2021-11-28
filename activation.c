@@ -60,17 +60,6 @@ tensor* activation_forward_softmax(tensor* input, activation* activation)
     return input;
 }
 
-activation* build_activation_tanh()
-{
-    activation* result = (activation*) malloc(sizeof(activation));
-    result->type = TANH;
-    result->activation_backward_propagation=activation_backward_propagation;
-    result->activation_forward = activation_forward;
-    result->activation_func=tanh;
-    result->activation_func_prime=tanh_prime;
-    return result;
-}
-
 tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     tensor gradient_product;
@@ -94,6 +83,16 @@ activation* build_default_activation(activation_type type)
 {
     activation* result = (activation*) malloc(sizeof(activation));
     result->type = type;
+}
+
+activation* build_activation_tanh()
+{
+    activation* result = build_default_activation(TANH);
+    result->activation_backward_propagation=activation_backward_propagation;
+    result->activation_forward = activation_forward;
+    result->activation_func=tanh;
+    result->activation_func_prime=tanh_prime;
+    return result;
 }
 
 activation* build_activation_softmax()
