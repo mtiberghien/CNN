@@ -77,7 +77,6 @@ void init_memory_training_FC(layer* layer)
     layer->activation_input = (tensor *)malloc(sizeof(tensor)*batch_size);
     layer->previous_gradients = (tensor *)malloc(sizeof(tensor)*batch_size);
     layer->weights_gradients =(tensor*)malloc(sizeof(tensor)*output_size);
-    initialize_tensor(layer->previous_gradients, input_size);
     initialize_tensor(&layer->biases_gradients, output_size);
     for(int i=0;i<output_size;i++)
     {
