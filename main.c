@@ -63,7 +63,7 @@ void test_model()
 
 int main(){
     omp_set_num_threads(10);
-/*     char* filename = "save/model2.txt";
+    char* filename = "save/model2.txt";
     dataset* train = getMNISTData(60000, 0);
     dataset* test = getMNISTData(10000, 1);
     model* model = build_model();
@@ -80,6 +80,6 @@ int main(){
     
     clear_model(model);
     clear_dataset(train);
-    clear_dataset(test); */
+    clear_dataset(test);
     test_model();
 }
