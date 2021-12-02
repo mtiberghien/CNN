@@ -5,6 +5,7 @@
 #include "optimizer.h"
 #include "activation.h"
 #include "progression.h"
+#include "common.h"
 #include <stdio.h>
 
 typedef enum layer_type{FC} layer_type;
@@ -14,22 +15,22 @@ typedef struct layer{
     tensor* activation_input;
     tensor* layer_inputs;
     //Stores the weight matrix as an array of tensor
-    tensor* weights;
+    tensor weights;
     //Stores the biases
     tensor biases;
     tensor* outputs;
-    tensor* weights_gradients;
+    tensor weights_gradients;
     tensor* previous_gradients;
     tensor biases_gradients;
     layer_type type;
     //Stores the batch size
     int batch_size;
     //Stores the layer input size (number of elements of an input tensor)
-    int input_size;
+    shape* input_shape;
     //Stores the layer output size (number of elements of an output tensor)
-    int output_size;
+    shape* output_shape;
     //Stores the output tensor batch (after activation)
-    void (*compile_layer)(int input_size, struct layer* layer);
+    void (*compile_layer)(shape* input_shape, struct layer* layer);
     void (*init_training_memory)(struct layer* layer);
     void (*init_predict_memory)(struct layer* layer);
     void (*clear_predict_memory)(struct layer* layer);
@@ -43,13 +44,13 @@ typedef struct layer{
     tensor* (*forward_calculation_training)(const tensor* input, tensor* output, tensor* activation_input, struct layer* layer);
     tensor* (*forward_calculation_predict)(const tensor* input, tensor* output, struct layer* layer);
     //Stores the specific backward propagation calculation (transition from gradient of next layer to gradient of current layer and update of weights and biases) 
-    void (*backward_calculation)(tensor* biases_gradient, tensor* weights_gradient, optimizer* optimizer, struct layer* layer, int layer_index);
+    void (*backward_calculation)(optimizer* optimizer, struct layer* layer, int layer_index);
     //Stores the activation object
     activation* activation;
 } layer;
 
 void clear_layer(layer*);
-layer* build_layer(layer_type type, int output_size, activation* activation);
+layer* build_layer_FC(int output_size, activation* activation);
 void save_layer(FILE *fp, layer* layer);
 layer* read_layer(FILE *fp);
 #endif

@@ -20,7 +20,9 @@ dataset* getMNISTData(int limit, short test)
     tensor * features = (tensor*)malloc(sizeof(tensor));
     char** labels = (char**)malloc(sizeof(char*));
     dataset* result = (dataset*)malloc(sizeof(dataset));
-    result->n_features = 784;
+    int n_features = 784;
+    result->features_shape = build_shape(OneD);
+    result->features_shape->sizes[0]=n_features;
     fp = fopen(filepath, "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
@@ -32,12 +34,12 @@ dataset* getMNISTData(int limit, short test)
         if(read>1){
             features = (tensor*) realloc(features, (ln+1) * sizeof(tensor));
             labels = (char**) realloc(labels, (ln+1) * sizeof(char*));
-            initialize_tensor(&features[ln], result->n_features);
+            initialize_tensor(&features[ln], result->features_shape);
             char delim[]=",";
             int column = 0;
             int i=0;
             char *ptr = strtok(line, delim);
-            while(ptr != NULL && i < result->n_features)
+            while(ptr != NULL && i < n_features)
             {
                 if(column > 0){
                     features[ln].v[i] = strtod(ptr, NULL) * norm_factor;

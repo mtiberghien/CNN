@@ -71,7 +71,8 @@ void init_model_training_memory(int batch_size, model* model)
         layer->batch_size = batch_size;
         layer->init_training_memory(layer);
     }
-    model->loss->init_training_memory(batch_size, model->layers[model->n_layers-1].output_size, model->loss);
+    layer last_layer = model->layers[model->n_layers-1];
+    model->loss->init_training_memory(batch_size, last_layer.output_shape, model->loss);
 }
 
 void clear_model_training_memory(model* model)
@@ -94,7 +95,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     result->loss = malloc(sizeof(double)*result->n_results);
     int result_indice=0;
     int mean_error_count = n_episodes/10;
-    double invert_output_size = (double)1/model->layers[model->n_layers-1].output_size;
+    mean_error_count = mean_error_count == 0 ?1:mean_error_count;
     for(int i=0;i<inputs_size;i++)
     {
         indices[i]=i;
@@ -136,9 +137,9 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
                 outputs = model->layers[i].forward_propagation_training_loop(outputs, current_batch_size, &model->layers[i], NULL);
             }
             //mean of errors of current batch
-            loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->loss);
+            loss = model->loss->forward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
             //Current batch Backward pass using mean of batch gradients
-            tensor* gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, invert_output_size, model->loss);
+            tensor* gradients = model->loss->backward_error_loop(truths_batch, outputs, current_batch_size, model->loss);
             for(int i=model->n_layers-1;i>=0;i--)
             {
                 gradients = model->layers[i].backward_propagation_loop(gradients, model->optimizer, &model->layers[i], i);
@@ -170,19 +171,19 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     return result;
 }
 
-void compile(int input_size, optimizer* optimizer, loss* loss, model* model)
+void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
 {
     model->loss=loss;
     model->optimizer=optimizer;
-    int* layers_output_size = malloc(sizeof(int)*model->n_layers);
+    shape* layers_output_shape = malloc(sizeof(int*)*model->n_layers);
     for(int i=0;i<model->n_layers;i++)
     {
-        model->layers[i].compile_layer(input_size, &model->layers[i]);
-        input_size = model->layers[i].output_size;
-        layers_output_size[i]=model->layers[i].output_size;
+        model->layers[i].compile_layer(input_shape, &model->layers[i]);
+        input_shape = model->layers[i].output_shape;
+        layers_output_shape[i]=*model->layers[i].output_shape;
     }
-    optimizer->compile(layers_output_size, model->n_layers, optimizer);
-    free(layers_output_size);
+    optimizer->compile(layers_output_shape, model->n_layers, optimizer);
+    free(layers_output_shape);
 }
 
 model* build_model()

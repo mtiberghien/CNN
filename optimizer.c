@@ -22,33 +22,10 @@ optimizer* build_optimizer(optimizer_type type)
     }
 }
 
-//Build a simple gradient descent 
-optimizer* build_optimizer_GD(double alpha)
+void compile_default(shape* layers_output_shapes, int n_layers, struct optimizer* optimizer)
 {
-    //Memory allocation
-    optimizer* result=(optimizer*) malloc(sizeof(optimizer));
-    //Store learning parameter
-    result->alpha = alpha;
-    //Set the gradient calculation function
-    result->apply_gradient=apply_gradient_GD;
-    result->type = GD;
-    result->compile = compile_default;
-    result->clear = clear_optimizer_default;
-    return result;
-}
-
-optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps)
-{
-    optimizer* result = (optimizer*) malloc(sizeof(optimizer));
-    result->alpha = alpha;
-    result->beta_1 = beta_1;
-    result->beta_2 = beta_2;
-    result->eps = eps;
-    result->type = ADAM;
-    result->compile = compile_Adam;
-    result->apply_gradient= apply_gradient_Adam;
-    result->clear=clear_optimizer_Adam;
-    return result;
+    optimizer->t=0;
+    optimizer->n_layers = n_layers;
 }
 
 //Simple gradient descent calculation
@@ -66,12 +43,22 @@ double apply_gradient_Adam(double value, double gradient, int layer_index, int t
     return value - ((optimizer->alpha * mhat)/(sqrt(vhat)+optimizer->eps));
 }
 
-void compile_default(int* layers_output_size, int n_layers, struct optimizer* optimizer)
+//Build a simple gradient descent 
+optimizer* build_optimizer_GD(double alpha)
 {
-    optimizer->t=0;
-    optimizer->n_layers = n_layers;
+    //Memory allocation
+    optimizer* result=(optimizer*) malloc(sizeof(optimizer));
+    //Store learning parameter
+    result->alpha = alpha;
+    //Set the gradient calculation function
+    result->apply_gradient=apply_gradient_GD;
+    result->type = GD;
+    result->compile = compile_default;
+    result->clear = clear_optimizer_default;
+    return result;
 }
-void compile_Adam(int* layers_output_size, int n_layers, struct optimizer* optimizer)
+
+void compile_Adam(shape* layers_output_shapes, int n_layers, struct optimizer* optimizer)
 {
     optimizer->n_layers = n_layers;
     optimizer->t=0;
@@ -79,9 +66,23 @@ void compile_Adam(int* layers_output_size, int n_layers, struct optimizer* optim
     optimizer->v=(tensor*)malloc(sizeof(tensor)*n_layers);
     for(int i=0;i<n_layers;i++)
     {
-        initialize_tensor(&optimizer->m[i], layers_output_size[i]);
-        initialize_tensor(&optimizer->v[i], layers_output_size[i]);
+        initialize_tensor(&optimizer->m[i], &layers_output_shapes[i]);
+        initialize_tensor(&optimizer->v[i], &layers_output_shapes[i]);
     }
+}
+
+optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps)
+{
+    optimizer* result = (optimizer*) malloc(sizeof(optimizer));
+    result->alpha = alpha;
+    result->beta_1 = beta_1;
+    result->beta_2 = beta_2;
+    result->eps = eps;
+    result->type = ADAM;
+    result->compile = compile_Adam;
+    result->apply_gradient= apply_gradient_Adam;
+    result->clear=clear_optimizer_Adam;
+    return result;
 }
 
 void save_optimizer(FILE* fp, optimizer* optimizer)
@@ -91,7 +92,9 @@ void save_optimizer(FILE* fp, optimizer* optimizer)
     {
         for(int i=0;i<optimizer->n_layers;i++)
         {
-            fprintf(fp, "size:%d\n", optimizer->m[i].size);
+            fprintf(fp, "shape:");
+            save_shape(fp, optimizer->m[i].shape);
+            fprintf(fp, "\n");
             save_tensor(fp, &optimizer->m[i]);
             save_tensor(fp, &optimizer->v[i]);
         }
@@ -117,9 +120,15 @@ optimizer* read_optimizer(FILE* fp)
         {
             for(int i=0;i<n_layers;i++)
             {
-                fscanf(fp, "size:%d\n", &size);
-                read_tensor(fp, &optimizer->m[i], size);
-                read_tensor(fp, &optimizer->v[i], size);
+                tensor* m = &optimizer->m[i];
+                tensor* v = &optimizer->v[i];
+                fscanf(fp, "shape:");
+                shape* shape= read_shape(fp);
+                fscanf(fp, "\n");
+                initialize_tensor(m, shape);
+                initialize_tensor(v, shape);
+                read_tensor(fp, &optimizer->m[i]);
+                read_tensor(fp, &optimizer->v[i]);
             }
         }
         return optimizer;

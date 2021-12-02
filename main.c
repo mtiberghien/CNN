@@ -43,7 +43,7 @@ void test_model()
     for(int i=0;i<test->n_entries;i++)
     {
         int label = (int)strtod(test->labels[i],NULL);
-        int pred = arg_max(&predictions[i]);
+        int pred = arg_max(&predictions[i])[0];
         printf("true label:%d, predicted: %d\n", label, pred);
         if(label!=pred)
         {
@@ -64,14 +64,14 @@ void test_model()
 int main(){
     omp_set_num_threads(10);
     char* filename = "save/model2.txt";
-    dataset* train = getMNISTData(60000, 0);
+    dataset* train = getMNISTData(10000, 0);
     dataset* test = getMNISTData(10000, 1);
     model* model = build_model();
-    model->add_layer(build_layer(FC, 512, build_activation(RELU)), model);
-    model->add_layer(build_layer(FC, 10, build_activation(SOFTMAX)), model);
-    model->compile(train->n_features, build_optimizer(ADAM), build_loss(CCE), model);
+    model->add_layer(build_layer_FC(128, build_activation(RELU)), model);
+    model->add_layer(build_layer_FC(10, build_activation(SOFTMAX)), model);
+    model->compile(train->features_shape, build_optimizer(ADAM), build_loss(CCE), model);
     save_model(model, filename);
-    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 64, 10, model);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 1, model);
     free(result);
     save_model(model, filename);
     

@@ -1,5 +1,6 @@
 #include "include/dataset.h"
 #include <stdlib.h>
+#include "include/tensor.h"
 
 void clear_dataset(dataset* dataset)
 {
@@ -12,5 +13,7 @@ void clear_dataset(dataset* dataset)
     free(dataset->labels);
     free(dataset->features);
     free(dataset->labels_categorical);
+    clear_shape(dataset->features_shape);
+    free(dataset->features_shape);
     free(dataset);
 }

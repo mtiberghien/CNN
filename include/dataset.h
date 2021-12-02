@@ -5,7 +5,7 @@
 
 typedef struct dataset{
     tensor * features;
-    int n_features;
+    shape* features_shape;
     char** labels;
     tensor * labels_categorical;
     int n_entries;

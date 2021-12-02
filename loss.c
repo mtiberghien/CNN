@@ -3,40 +3,69 @@
 #include "include/layer.h"
 #include "math.h"
 
-double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, double invert_output_size, loss* loss)
+double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, loss* loss)
 {
     double errors = 0;
+    int* size = loss->gradients[0].shape->sizes;
+    int dim = loss->gradients[0].shape->dimension;
+    double tot_size =1;
+    for(int i=0;i<dim;i++)
+    {
+        tot_size*=size[i];
+    }
+    double invert_output_size = 1/tot_size;
     #pragma omp parallel for reduction(+:errors)
     for(int i=0;i<batch_size;i++)
     {
-        for(int j=0;j<outputs[0].size;j++)
+        tensor* truth = &truths[i];
+        tensor* output = &outputs[i];
+        int* iterator = get_iterator(truth);
+        while(!truth->is_done(truth, iterator))
         {
-            errors+=invert_output_size*loss->loss(truths[i].v[j], outputs[i].v[j]);
+            double truth_v = truth->get_value(truth, iterator);
+            double output_v = output->get_value(output, iterator);
+            errors+=invert_output_size*loss->loss(truth_v, output_v);
+            iterator = truth->get_next(truth, iterator);
         }
-        
+        free(iterator);     
     }
     return errors/batch_size;
 }
 
 
-tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, double invert_output_size, loss* loss)
+tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, loss* loss)
 {
-    int size = outputs[0].size;
+    int* size = loss->gradients[0].shape->sizes;
+    int dim = loss->gradients[0].shape->dimension;
+    double tot_size =1;
+    for(int i=0;i<dim;i++)
+    {
+        tot_size*=size[i];
+    }
+    double invert_output_size = 1/tot_size;
     #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
+        tensor* truth = &truths[i];
+        tensor* output = &outputs[i];
         tensor* gradient = &loss->gradients[i];
-        for(int j=0;j<size;j++)
+        int* iterator = get_iterator(truth);
+        while(!truth->is_done(truth, iterator))
         {
-            gradient->v[j]=invert_output_size*(loss->loss_prime(truths[i].v[j], outputs[i].v[j]));
+            double truth_v = truth->get_value(truth, iterator);
+            double output_v = output->get_value(output, iterator);
+            gradient->set_value(gradient, iterator, invert_output_size*(loss->loss_prime(truth_v, output_v)));
+            iterator = truth->get_next(truth, iterator);
         }
+        free(iterator); 
     }
     return loss->gradients;
 }
 
 double loss_cce(double truth, double output)
 {
-    return -truth*log(output);
+    double result = -truth*log(output);
+    return result;
 }
 
 double loss_prime_cce(double truth, double output)
@@ -55,13 +84,13 @@ double loss_prime_mse(double truth, double output)
     return 2*(output-truth);
 }
 
-void init_training_memory(int batch_size, int output_size, loss* loss)
+void init_training_memory(int batch_size, shape* shape, loss* loss)
 {
     loss->batch_size=batch_size;
     loss->gradients = malloc(sizeof(tensor)*batch_size);
     for(int i=0;i<batch_size;i++)
     {
-        initialize_tensor(&loss->gradients[i], output_size);
+        initialize_tensor(&loss->gradients[i], shape);
     }
 }
 

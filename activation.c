@@ -52,30 +52,44 @@ tensor* activation_forward_softmax(tensor* input, activation* activation)
     input = sub(input, max_value);
     double denominator = sum(input, exp);
     double invert_denominator = denominator == 0?1:(double)1.0/denominator;
-    for(int i=0;i<input->size;i++)
+    int* iterator = get_iterator(input);
+    while(!input->is_done(input, iterator))
     {
-        double d = exp(input->v[i]);
-        input->v[i]=d*invert_denominator;
+        double v = input->get_value(input, iterator);
+        double d = exp(v);
+        input->set_value(input, iterator, d*invert_denominator);
+        iterator = input->get_next(input, iterator);
     }
+    free(iterator);
     return input;
 }
 
 tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     tensor gradient_product;
-    initialize_tensor(&gradient_product, gradient->size);
+    initialize_tensor(&gradient_product, gradient->shape);
     double sum =0;
-    for(int i=0;i<gradient->size;i++)
+    int* iterator = get_iterator(gradient);
+    while(!gradient->is_done(gradient, iterator))
     {
-        gradient_product.v[i]=gradient->v[i]*output->v[i];
-        sum+=gradient_product.v[i];
+        double output_v = output->get_value(output, iterator);
+        double gradient_v = gradient->get_value(gradient, iterator);
+        double product = gradient_v*output_v;
+        gradient_product.set_value(&gradient_product, iterator, product);
+        sum+= product;
+        iterator = gradient->get_next(gradient, iterator);
     }
-    for(int i=0;i<gradient->size;i++)
+    free(iterator);
+    iterator = get_iterator(gradient);
+    while(!gradient->is_done(gradient, iterator))
     {
-        gradient->v[i]-=sum;
-        gradient->v[i]*=output->v[i];
+        double output_v = output->get_value(output, iterator);
+        double gradient_v = gradient->get_value(gradient, iterator);
+        gradient->set_value(gradient, iterator,(gradient_v - sum)*output_v);
+        iterator = gradient->get_next(gradient, iterator);
     }
-    free(gradient_product.v);
+    free(iterator);
+    clear_tensor(&gradient_product);
     return gradient;
 }
 
