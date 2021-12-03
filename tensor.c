@@ -40,6 +40,7 @@ void clear_tensor_3D(double*v, int* sizes)
 void clear_tensor(tensor* tensor){
     tensor->clear_tensor(tensor->v, tensor->shape->sizes);
     clear_shape(tensor->shape);
+    free(tensor->shape);
 }
 
 //Free memory for a batch of tensors

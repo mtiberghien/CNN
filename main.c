@@ -64,14 +64,15 @@ void test_model()
 int main(){
     omp_set_num_threads(10);
     char* filename = "save/model2.txt";
-    dataset* train = getMNISTData(10000, 0);
+    dataset* train = getMNISTData(60000, 0);
     dataset* test = getMNISTData(10000, 1);
     model* model = build_model();
     model->add_layer(build_layer_FC(128, build_activation(RELU)), model);
     model->add_layer(build_layer_FC(10, build_activation(SOFTMAX)), model);
     model->compile(train->features_shape, build_optimizer(ADAM), build_loss(CCE), model);
     save_model(model, filename);
-    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 1, model);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 5, model);
+    clear_result(result);
     free(result);
     save_model(model, filename);
     

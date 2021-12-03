@@ -50,6 +50,11 @@ void clear_model_predict_memory(model* model)
     }
 }
 
+void clear_result(training_result* result)
+{
+    free(result->loss);
+}
+
 tensor* predict(tensor* inputs, int inputs_size, model* model)
 {
     tensor* outputs = inputs;
@@ -175,12 +180,12 @@ void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
 {
     model->loss=loss;
     model->optimizer=optimizer;
-    shape* layers_output_shape = malloc(sizeof(int*)*model->n_layers);
+    shape* layers_output_shape = malloc(sizeof(shape)*model->n_layers);
     for(int i=0;i<model->n_layers;i++)
     {
         model->layers[i].compile_layer(input_shape, &model->layers[i]);
         input_shape = model->layers[i].output_shape;
-        layers_output_shape[i]=*model->layers[i].output_shape;
+        layers_output_shape[i]=*input_shape;
     }
     optimizer->compile(layers_output_shape, model->n_layers, optimizer);
     free(layers_output_shape);

@@ -32,4 +32,5 @@ void save_training_result(training_result* result, char* filename);
 void save_model(model* model, char* filename);
 model* read_model(char* filename);
 void clear_model_predict_memory(model* model);
+void clear_result(training_result* result);
 #endif

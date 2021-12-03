@@ -14,14 +14,8 @@ typedef enum layer_type{FC} layer_type;
 typedef struct layer{
     tensor* activation_input;
     tensor* layer_inputs;
-    //Stores the weight matrix as an array of tensor
-    tensor weights;
-    //Stores the biases
-    tensor biases;
     tensor* outputs;
-    tensor weights_gradients;
     tensor* previous_gradients;
-    tensor biases_gradients;
     layer_type type;
     //Stores the batch size
     int batch_size;
@@ -29,12 +23,16 @@ typedef struct layer{
     shape* input_shape;
     //Stores the layer output size (number of elements of an output tensor)
     shape* output_shape;
+    void* parameters;
     //Stores the output tensor batch (after activation)
     void (*compile_layer)(shape* input_shape, struct layer* layer);
     void (*init_training_memory)(struct layer* layer);
     void (*init_predict_memory)(struct layer* layer);
     void (*clear_predict_memory)(struct layer* layer);
     void (*clear_training_memory)(struct layer* layer);
+    void (*clear_parameters)(struct layer* layer);
+    void (*save_parameters)(FILE*, struct layer* layer);
+    void (*read_parameters)(FILE*, struct layer* layer);
     //Stores the forward propagation loop
     tensor* (*forward_propagation_training_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
     tensor* (*forward_propagation_predict_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
