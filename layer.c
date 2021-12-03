@@ -9,16 +9,26 @@
 typedef struct fc_parameters{
     //Stores the weight matrix as an array of tensor
     tensor weights;
+    tensor weights_gradients;
     //Stores the biases
     tensor biases;
-    tensor weights_gradients;
     tensor biases_gradients;
 }fc_parameters;
 
+typedef struct conv2D_parameters{
+    short padding;
+    int stride;
+    int kernel_size;
+    int n_output_channels;
+    tensor filters;
+    tensor filters_gradients;
+    tensor biases;
+    tensor biases_gradients;
+} conv2D_parameters;
+
 //Clear memory of temporary stored inputs and outputs
-void clear_layer_training_memory_FC(layer *layer)
+void clear_layer_training_memory(layer *layer)
 {
-    fc_parameters* params = (fc_parameters*)layer->parameters;
     #pragma omp parallel for
     for (int i = 0; i < layer->batch_size; i++)
     {
@@ -26,15 +36,22 @@ void clear_layer_training_memory_FC(layer *layer)
         clear_tensor(&layer->activation_input[i]);
         clear_tensor(&layer->previous_gradients[i]);
     }
-    clear_tensor(&params->weights_gradients);
     free(layer->previous_gradients);
-    clear_tensor(&params->biases_gradients);
     free(layer->activation_input);
     free(layer->layer_inputs);
     free(layer->outputs);
 }
 
-void clear_layer_predict_memory_FC(layer* layer)
+//Clear memory of temporary stored inputs and outputs
+void clear_layer_training_memory_FC(layer *layer)
+{
+    fc_parameters* params = (fc_parameters*)layer->parameters;
+    clear_layer_training_memory(layer);
+    clear_tensor(&params->weights_gradients);
+    clear_tensor(&params->biases_gradients);
+}
+
+void clear_layer_predict_memory(layer* layer)
 {
     #pragma omp parallel for
     for (int i = 0; i < layer->batch_size; i++)
@@ -91,17 +108,14 @@ void compile_layer_FC(shape* input_shape, layer *layer)
     }
 }
 
-void init_memory_training_FC(layer* layer)
+void init_memory_training(layer* layer)
 {
-    fc_parameters* params = (fc_parameters*)layer->parameters;
     shape* input_shape = layer->input_shape;
     shape* output_shape = layer->output_shape;
     int batch_size = layer->batch_size;
     layer->layer_inputs=(tensor*) malloc(sizeof(tensor)*batch_size);
     layer->activation_input = (tensor *)malloc(sizeof(tensor)*batch_size);
     layer->previous_gradients = (tensor *)malloc(sizeof(tensor)*batch_size);
-    initialize_tensor(&params->weights_gradients, params->weights.shape);
-    initialize_tensor(&params->biases_gradients, output_shape);
     layer->outputs = malloc(sizeof(tensor) * batch_size);
     #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
@@ -112,7 +126,15 @@ void init_memory_training_FC(layer* layer)
     }
 }
 
-void init_memory_predict_FC(layer* layer)
+void init_memory_training_FC(layer* layer)
+{
+    init_memory_training(layer);
+    fc_parameters* params = (fc_parameters*)layer->parameters;
+    initialize_tensor(&params->weights_gradients, params->weights.shape);
+    initialize_tensor(&params->biases_gradients, layer->output_shape);
+}
+
+void init_memory_predict(layer* layer)
 {
     int batch_size = layer->batch_size;
     shape* output_shape = layer->output_shape;
@@ -310,10 +332,159 @@ void save_layer(FILE *fp, layer *layer)
     save_activation(fp, layer->activation);
 }
 
+tensor* pad_input(const tensor* input, layer* layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    tensor* result = malloc(sizeof(tensor));
+    shape* shape = build_shape(ThreeD);
+    int padding_size = (params->kernel_size-1);
+    shape->sizes[0]=input->shape->sizes[0];
+    shape->sizes[1]=input->shape->sizes[1] + padding_size;
+    shape->sizes[2]=input->shape->sizes[2] + padding_size;
+    int offset = padding_size/2;
+    initialize_tensor(result, shape);
+    double*** out = (double***)result->v;
+    double*** in = (double***)input->v;
+    for(int i=0;i<input->shape->sizes[0];i++)
+    {
+        double** matrix_out = out[i];
+        double** matrix_in = in[i];
+        for(int j=offset;j<input->shape->sizes[1];j++)
+        {
+            for(int k=offset;k<input->shape->sizes[2];k++)
+            {
+                matrix_out[j][k]=matrix_in[j][k];
+            }
+        }
+    }
+    clear_shape(shape);
+    free(shape);
+    return result;
+}
+
+//Convolution calculation layer
+tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, layer *layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    int output_width = layer->output_shape->sizes[2];
+    int output_height = layer->output_shape->sizes[1];
+    int output_channels = layer->output_shape->sizes[0];
+    int input_channels = layer->output_shape->sizes[0];
+    int kernel_size = params->kernel_size;
+    int stride = params->stride;
+    double*** filters = (double***)params->filters.v;
+    const tensor* used_input = params->padding? pad_input(input, layer):input;
+    double*** cube_out = (double***)output->v;
+    double*** cube_in = (double***)used_input->v;
+    //Iterate trough each output height
+    for(int i=0;i<output_height;i++)
+    {
+        //And trough each output width
+        for(int j=0;j<output_width;j++)
+        {
+            //Calculates the associated matrix slice locations in input space
+            int start_x=j*stride;
+            int start_y=i*stride;
+            int end_x=start_x+kernel_size;
+            int end_y=start_x+kernel_size;
+            //Iterate trough each output channel
+            for(int c_out =0;c_out<output_channels;c_out++)
+            {
+                double** matrix_out = cube_out[c_out];
+                double** matrix_filter = filters[c_out];
+                //Iterate trough each input channel
+                for(int c_in=0;c_in<input_channels;c_in++)
+                {
+                    double** matrix_in = cube_in[c_in];
+                    //Iterate trough each cell of input slice
+                    for(int i_y=start_y;i_y<end_y;i_y++)
+                    {
+                        for(int i_x=start_x;i_x<end_y;i_x++)
+                        {
+                            //Sum the product of each input channel with associated output channel filter
+                            matrix_out[i][j]+=matrix_filter[i_y-start_y][i_x-start_x]*matrix_in[i_y][i_x];
+                        }
+                    }
+                }
+                //Add biases to each channel
+                matrix_out[i][j]+=params->biases.v[c_out];
+            }
+        }
+    }
+    if (layer->activation)
+    {
+        //Execute activation function and return output tensor
+        output = layer->activation->activation_forward(output, layer->activation);
+    }
+    return output;
+}
+
+void init_memory_training_Conv2D(layer* layer)
+{
+    init_memory_training(layer);
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    initialize_tensor(&params->filters_gradients, params->filters.shape);
+    initialize_tensor(&params->biases_gradients, params->biases.shape);
+}
+
+void clear_layer_training_memory_Conv2D(layer *layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    clear_layer_training_memory(layer);
+    clear_tensor(&params->filters_gradients);
+    clear_tensor(&params->biases_gradients);
+}
+
+
+void compile_layer_Conv2D(shape* input_shape, layer *layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    int kernel_size = params->kernel_size;
+    short padding = params->padding;
+    int stride = params->stride;
+    //Storing input_shape (should be ThreeD) with img_channels, img_height, img_width
+    layer->input_shape = clone_shape(input_shape);
+    //Calculating output height and width according to input_shape and parameters using ((Is - K + (K-1)*P)/St)+1
+    int output_height = ((input_shape->sizes[1] - kernel_size + (kernel_size-1)*padding)/stride)+1;
+    int output_width = ((input_shape->sizes[2] - kernel_size +(kernel_size-1)*padding)/stride)+1;
+    layer->output_shape->sizes[1]= output_height;
+    layer->output_shape->sizes[2]= output_width;
+    //Filter shape is created according to kernel_size and output_channel_size
+    shape* filter_shape = build_shape(ThreeD);
+    filter_shape->sizes[0]=params->n_output_channels;
+    filter_shape->sizes[1]=params->kernel_size;
+    filter_shape->sizes[2]=params->kernel_size;
+    initialize_tensor(&params->filters, filter_shape);
+    clear_shape(filter_shape);
+    free(filter_shape);
+    //Filters initialization
+    double invert_rand_max = (double)1.0 / (double)RAND_MAX;
+    // glorot uniform init: https://github.com/ElefHead/numpy-cnn/blob/master/utilities/initializers.py
+    double limit = sqrt((double)6 /(params->kernel_size + (params->kernel_size*input_shape->sizes[0]*params->n_output_channels)));
+    int* iterator = get_iterator(&params->filters);
+    while(!params->filters.is_done(&params->filters, iterator))
+    {
+        params->filters.set_value(&params->filters, iterator, (2 * limit * ((double)rand() * invert_rand_max)) - limit);
+        iterator = params->filters.get_next(&params->filters, iterator);
+    }
+    free(iterator);
+    shape* biases_shape = build_shape(OneD);
+    biases_shape->sizes[0]=params->n_output_channels;
+    initialize_tensor(&params->biases, biases_shape);
+    clear_shape(biases_shape);
+    free(biases_shape);
+    for (int i = 0; i < params->n_output_channels; i++)
+    {
+        params->biases.v[i] = (2 * limit * ((double)rand() * invert_rand_max)) - limit;
+    }
+}
+
 void configure_default_layer(layer* layer)
 {
     layer->forward_propagation_training_loop = forward_propagation_training_loop;
     layer->forward_propagation_predict_loop = forward_propagation_predict_loop;
+    layer->init_predict_memory = init_memory_predict;
+    layer->clear_predict_memory = clear_layer_predict_memory;
 }
 
 void configure_layer_FC(layer* layer)
@@ -323,9 +494,7 @@ void configure_layer_FC(layer* layer)
     fc_parameters* params = malloc(sizeof(fc_parameters));
     layer->parameters = params;
     layer->compile_layer = compile_layer_FC;
-    layer->init_predict_memory = init_memory_predict_FC;
     layer->init_training_memory = init_memory_training_FC;
-    layer->clear_predict_memory = clear_layer_predict_memory_FC;
     layer->clear_training_memory = clear_layer_training_memory_FC;
     layer->forward_calculation_training = forward_calculation_training_FC;
     layer->forward_calculation_predict = forward_calculation_predict_FC;
@@ -334,6 +503,17 @@ void configure_layer_FC(layer* layer)
     layer->clear_parameters = clear_parameters_FC;
     layer->read_parameters = read_parameters_FC;
     layer->save_parameters = save_parameters_FC;
+}
+
+void configure_layer_Conv2D(layer* layer)
+{
+    configure_default_layer(layer);
+    conv2D_parameters* params = (conv2D_parameters*)malloc(sizeof(conv2D_parameters));
+    layer->parameters = params;
+    layer->compile_layer = compile_layer_Conv2D;
+    layer->init_training_memory = init_memory_training_Conv2D;
+    layer->clear_training_memory = clear_layer_training_memory_Conv2D;
+    layer->forward_calculation_predict = forward_calculation_predict_Conv2D;
 }
 
 layer* build_layer(layer_type type, shape* input_shape, shape* output_shape)
@@ -374,6 +554,22 @@ layer* build_layer_FC(int output_size, activation* activation)
     layer->type = FC;
     layer->output_shape = build_shape(OneD);
     layer->output_shape->sizes[0]=output_size;
+    layer->activation = activation;
+    return layer;
+}
+
+layer* build_layer_Conv2D(int output_channel_size, int kernel_size, int stride, short padding, activation* activation)
+{
+    layer *layer = (struct layer *)malloc(sizeof(struct layer));
+    configure_layer_FC(layer);
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    params->n_output_channels = output_channel_size;
+    params->kernel_size = kernel_size;
+    params->stride = stride;
+    params->padding = padding > 0;
+    layer->type = CONV2D;
+    layer->output_shape = build_shape(ThreeD);
+    layer->output_shape->sizes[0]=output_channel_size;
     layer->activation = activation;
     return layer;
 }
