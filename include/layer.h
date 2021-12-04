@@ -49,8 +49,14 @@ typedef struct layer{
 } layer;
 
 void clear_layer(layer*);
-layer* build_layer_FC(int output_size, activation* activation);
-layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation);
 void save_layer(FILE *fp, layer* layer);
 layer* read_layer(FILE *fp);
+layer* build_layer_FC(int output_size, activation* activation);
+layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation);
+void configure_layer_Conv2D(layer* layer);
+void configure_layer_FC(layer* layer);
+void init_memory_training(layer* layer);
+void clear_layer_predict_memory(layer* layer);
+void clear_layer_training_memory(layer *layer);
+void configure_default_layer(layer* layer);
 #endif

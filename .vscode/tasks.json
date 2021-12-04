@@ -3,11 +3,12 @@
 	"tasks": [
 		{
 			"type": "cppbuild",
-			"label": "C/C++: gcc générer le fichier actif",
+			"label": "C/C++: gcc génerer tous les fichiers",
 			"command": "/usr/bin/gcc",
 			"args": [
 				"-g",
 				"${workspaceFolder}/*.c",
+				"${workspaceFolder}/layers/*.c",
 				"-o",
 				"${workspaceFolder}/bin/${fileBasenameNoExtension}",
 				"-lm",
