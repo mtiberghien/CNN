@@ -34,11 +34,11 @@ void draw_image(tensor* img)
     }
 }
 
-void test_model()
+void test_model(char* filename)
 {
     int test_size=10;
     dataset* test = getMNISTData(test_size, 1);
-    model* model = read_model("save/model2.txt");
+    model* model = read_model(filename);
     tensor* predictions = model->predict(test->features, test->n_entries, model);
     for(int i=0;i<test->n_entries;i++)
     {
@@ -63,7 +63,7 @@ void test_model()
 
 int main(){
     omp_set_num_threads(10);
-    char* filename = "save/model2.txt";
+    char* filename = "save/model.txt";
     dataset* train = getMNISTData(60000, 0);
     dataset* test = getMNISTData(10000, 1);
     model* model = build_model();
@@ -82,5 +82,5 @@ int main(){
     clear_model(model);
     clear_dataset(train);
     clear_dataset(test);
-    test_model();
+    test_model(filename);
 }

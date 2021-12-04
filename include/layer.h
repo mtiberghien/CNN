@@ -33,6 +33,7 @@ typedef struct layer{
     void (*clear_parameters)(struct layer* layer);
     void (*save_parameters)(FILE*, struct layer* layer);
     void (*read_parameters)(FILE*, struct layer* layer);
+    void (*build_shape_list)(struct layer* layer, shape_list* shape_list);
     //Stores the forward propagation loop
     tensor* (*forward_propagation_training_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
     tensor* (*forward_propagation_predict_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
@@ -49,7 +50,7 @@ typedef struct layer{
 
 void clear_layer(layer*);
 layer* build_layer_FC(int output_size, activation* activation);
-layer* build_layer_Conv2D(int output_channel_size, int kernel_size, int stride, short padding, activation* activation);
+layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation);
 void save_layer(FILE *fp, layer* layer);
 layer* read_layer(FILE *fp);
 #endif

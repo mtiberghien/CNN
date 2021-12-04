@@ -180,15 +180,19 @@ void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
 {
     model->loss=loss;
     model->optimizer=optimizer;
-    shape* layers_output_shape = malloc(sizeof(shape)*model->n_layers);
+    shape_list* layers_shape_list= malloc(sizeof(shape)*model->n_layers);
     for(int i=0;i<model->n_layers;i++)
     {
         model->layers[i].compile_layer(input_shape, &model->layers[i]);
         input_shape = model->layers[i].output_shape;
-        layers_output_shape[i]=*input_shape;
+        model->layers[i].build_shape_list(&model->layers[i],&layers_shape_list[i]);
     }
-    optimizer->compile(layers_output_shape, model->n_layers, optimizer);
-    free(layers_output_shape);
+    optimizer->compile(layers_shape_list, model->n_layers, optimizer);
+    for(int i=0;i<model->n_layers;i++)
+    {
+        clear_shape_list(&layers_shape_list[i]);
+    }
+    free(layers_shape_list);
 }
 
 model* build_model()
