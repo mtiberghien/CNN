@@ -8,7 +8,7 @@
 #include "common.h"
 #include <stdio.h>
 
-typedef enum layer_type{FC,CONV2D} layer_type;
+typedef enum layer_type{FC,CONV2D, FLATTEN} layer_type;
 
 //Represent a layer of a sequential neural network
 typedef struct layer{
@@ -53,8 +53,10 @@ void save_layer(FILE *fp, layer* layer);
 layer* read_layer(FILE *fp);
 layer* build_layer_FC(int output_size, activation* activation);
 layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation);
+layer* build_layer_Flatten(activation* activation);
 void configure_layer_Conv2D(layer* layer);
 void configure_layer_FC(layer* layer);
+void configure_layer_Flatten(layer* layer);
 void init_memory_training(layer* layer);
 void clear_layer_predict_memory(layer* layer);
 void clear_layer_training_memory(layer *layer);

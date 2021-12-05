@@ -133,15 +133,15 @@ void configure_default_layer(layer* layer)
     layer->clear_predict_memory = clear_layer_predict_memory;
 }
 
-layer* build_layer(layer_type type, shape* input_shape, shape* output_shape)
+layer* build_layer(layer_type type, shape* output_shape)
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));
     layer->type = type;
-    layer->input_shape = input_shape;
     layer->output_shape = output_shape;
     switch(type)
     {
         case CONV2D: configure_layer_Conv2D(layer);break;
+        case FLATTEN: configure_layer_Flatten(layer);break;
         default: configure_layer_FC(layer);break;
     }
 }
@@ -157,10 +157,12 @@ layer *read_layer(FILE *fp)
     fscanf(fp, ", type:%d\n", &type);
     if (type >= 0)
     {
-        layer *layer = build_layer(type, input_shape, output_shape);
+        layer *layer = build_layer(type, output_shape);
         layer->compile_layer(input_shape, layer);
         layer->read_parameters(fp, layer);
         layer->activation = read_activation(fp);
         return layer;
     }
+    clear_shape(input_shape);
+    free(input_shape);
 }
