@@ -13,24 +13,12 @@ void draw_image(tensor* img)
 {
     for(int j=0;j<28;j++)
     {
-        short is_empty=1;
-        for(int i=0;i<28;i++)
+        for(int k=0;k<28;k++)
         {
-            if (img->v[j*28+i]>0)
-            {
-                is_empty=0;
-                break;
-            }
+            double value = img->v[j*28+k];
+            printf("\033[%dm  ", value ==0?40:47);
         }
-        if(!is_empty)
-        {
-            for(int k=0;k<28;k++)
-            {
-                double value = img->v[j*28+k];
-                printf("\033[%dm  ", value ==0?40:47);
-            }
-            printf("\033[0m\n");
-        }
+        printf("\033[0m\n");
     }
 }
 

@@ -61,4 +61,7 @@ void init_memory_training(layer* layer);
 void clear_layer_predict_memory(layer* layer);
 void clear_layer_training_memory(layer *layer);
 void configure_default_layer(layer* layer);
+void clear_layer_parameters(struct layer* layer);
+void save_layer_parameters(FILE*, struct layer* layer);
+void read_layer_parameters(FILE*, struct layer* layer);
 #endif

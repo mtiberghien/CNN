@@ -24,7 +24,7 @@ void build_shape_list_Conv2D(layer* layer, shape_list* shape_list)
     shape_list->n_shapes=2;
     shape_list->shapes=malloc(sizeof(shape)*2);
     shape_list->shapes[0]=*clone_shape(params->biases.shape);
-    shape_list->shapes[1]=*clone_shape(layer->output_shape);
+    shape_list->shapes[1]=*clone_shape(params->filters.shape);
 }
 
 void clear_parameters_Conv2D(layer* layer)
@@ -92,6 +92,8 @@ tensor* pad_input(const tensor* input, layer* layer)
     int offset_x = padding_width/2;
     int offset_y = padding_height/2;
     initialize_tensor(result, shape);
+    clear_shape(shape);
+    free(shape);
     double*** out = (double***)result->v;
     double*** in = (double***)input->v;
     for(int i=0;i<input_channels;i++)
@@ -106,8 +108,6 @@ tensor* pad_input(const tensor* input, layer* layer)
             }
         }
     }
-    clear_shape(shape);
-    free(shape);
     return result;
 }
 
@@ -131,14 +131,14 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
     //Iterate trough each output height
     for(int i=0;i<output_height;i++)
     {
+        int start_y=i*stride;
+        int end_y=start_y+kernel_height;
         //And trough each output width
         for(int j=0;j<output_width;j++)
         {
             //Calculates the associated matrix slice locations in input space
             int start_x=j*stride;
-            int start_y=i*stride;
             int end_x=start_x+kernel_width;
-            int end_y=start_y+kernel_height;
             //Iterate trough each output channel
             for(int c_out =0;c_out<output_channels;c_out++)
             {
@@ -152,10 +152,12 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
                     //Iterate trough each cell of input slice
                     for(int i_y=start_y;i_y<end_y;i_y++)
                     {
+                        int i_kernel_y = i_y-start_y;
                         for(int i_x=start_x;i_x<end_y;i_x++)
                         {
+                            int i_kernel_x = i_x-start_x;
                             //Sum the product of each input channel with associated output channel filter
-                            matrix_out[i][j]+=matrix_filter[i_y-start_y][i_x-start_x]*matrix_in[i_y][i_x];
+                            matrix_out[i][j]+=matrix_filter[i_kernel_y][i_kernel_x]*matrix_in[i_y][i_x];
                         }
                     }
                 }
@@ -198,14 +200,14 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
     //Iterate trough each output height
     for(int i=0;i<output_height;i++)
     {
+        int start_y=i*stride;
+        int end_y=start_y+kernel_height;
         //And trough each output width
         for(int j=0;j<output_width;j++)
         {
             //Calculates the associated matrix slice locations in input space
             int start_x=j*stride;
-            int start_y=i*stride;
             int end_x=start_x+kernel_width;
-            int end_y=start_x+kernel_height;
             //Iterate trough each output channel
             for(int c_out =0;c_out<output_channels;c_out++)
             {
@@ -218,10 +220,12 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
                     //Iterate trough each cell of input slice
                     for(int i_y=start_y;i_y<end_y;i_y++)
                     {
+                        int i_kernel_y = i_y-start_y;
                         for(int i_x=start_x;i_x<end_y;i_x++)
                         {
+                            int i_kernel_x = i_x-start_x;
                             //Sum the product of each input channel with associated output channel filter
-                            matrix_out[i][j]+=matrix_filter[i_y-start_y][i_x-start_x]*matrix_in[i_y][i_x];
+                            matrix_out[i][j]+=matrix_filter[i_kernel_y][i_kernel_x]*matrix_in[i_y][i_x];
                         }
                     }
                 }
@@ -261,8 +265,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
     for(int i=0;i<batch_size;i++)
     {
         tensor* gradient = &gradients[i];
-        double*** cube_gradient = (double***)gradient->v;
-        
+        double*** cube_gradient = (double***)gradient->v;        
         tensor* output = &layer->outputs[i];
         tensor p_gradient_previous;
         tensor* p_input = NULL;
@@ -288,6 +291,8 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
             //Iterate trough each output height
             for(int i=0;i<output_height;i++)
             {
+                int start_y=i*stride;
+                int end_y=start_y+kernel_height;
                 //And trough each output width
                 for(int j=0;j<output_width;j++)
                 {
@@ -297,9 +302,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                     matrix_gradient[i][j]=0;
                     //Calculates the associated matrix slice locations in input space
                     int start_x=j*stride;
-                    int start_y=i*stride;
                     int end_x=start_x+kernel_width;
-                    int end_y=start_x+kernel_height;
                     //Iterate trough each input channel
                     for(int c_in=0;c_in<input_channels;c_in++)
                     {
@@ -308,13 +311,15 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                         //Iterate trough each cell of input slice
                         for(int i_y=start_y;i_y<end_y;i_y++)
                         {
+                            int i_kernel_y = i_y-start_y;
                             for(int i_x=start_x;i_x<end_y;i_x++)
                             {
+                                int i_kernel_x = i_x-start_x;
                                 //Sum the product of each input channel with associated output gradient into the filter_gradient
-                                matrix_filter_gradient[i_y-start_y][i_x-start_x]+=matrix_gradient[i][j]*matrix_in[i_y][i_x];
+                                matrix_filter_gradient[i_kernel_y][i_kernel_x]+=matrix_gradient[i][j]*matrix_in[i_y][i_x];
                                 if(layer_index>0)
                                 {
-                                    matrix_gradient_previous[i_y][i_x]+=matrix_filter[i_y-start_y][i_x-start_x]*gradient_ij;
+                                    matrix_gradient_previous[i_y][i_x]+=matrix_filter[i_kernel_y][i_kernel_x]*gradient_ij;
                                 }                                
                             }
                         }
@@ -411,8 +416,9 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
     free(filter_shape);
     //Filters initialization
     double invert_rand_max = (double)1.0 / (double)RAND_MAX;
+    int fan_in = input_shape->sizes[0]*input_shape->sizes[1]*input_shape->sizes[2];
     // glorot uniform init: https://github.com/ElefHead/numpy-cnn/blob/master/utilities/initializers.py
-    double limit = sqrt((double)6 /(input_shape->sizes[0] + (params->kernel_width*params->kernel_height*params->n_output_channels)));
+    double limit = sqrt((double)6 /(fan_in + (params->kernel_width*params->kernel_height*params->n_output_channels)));
     int* iterator = get_iterator(&params->filters);
     while(!params->filters.is_done(&params->filters, iterator))
     {

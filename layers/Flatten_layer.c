@@ -1,10 +1,6 @@
 #include "../include/layer.h"
 
 
-void clear_parameters_Flatten(layer* layer)
-{
-}
-
 void compile_layer_Flatten(shape* input_shape, layer *layer)
 {
     layer->input_shape = clone_shape(input_shape);
@@ -85,8 +81,7 @@ tensor *backward_propagation_loop_Flatten(tensor *gradients, optimizer *optimize
         int output_index=0;
         while(!gradient_previous->is_done(gradient_previous, iterator))
         {
-            double g_p_v=gradient_previous->get_value(gradient_previous, iterator);
-            gradient_previous->set_value(gradient_previous, iterator, g_p_v+gradient->v[output_index]);
+            gradient_previous->set_value(gradient_previous, iterator, gradient->v[output_index]);
             iterator = gradient_previous->get_next(gradient_previous,iterator);
             gradient->v[output_index]=0;
             output_index++;
@@ -100,30 +95,16 @@ void backward_calculation_Flatten(optimizer *optimizer, layer *layer, int layer_
 {
 }
 
-void save_parameters_Flatten(FILE* fp, layer* layer)
-{
-}
-
-void read_parameters_Flatten(FILE* fp, layer* layer)
-{
-}
-
 void configure_layer_Flatten(layer* layer)
 {
     //Set used methods for the layer
     configure_default_layer(layer);
-    layer->clear_parameters=clear_parameters_Flatten;
-    layer->clear_training_memory= clear_layer_training_memory;
-    layer->clear_predict_memory=clear_layer_predict_memory;
     layer->forward_calculation_predict=forward_calculation_predict_Flatten;
     layer->forward_calculation_training=forward_calculation_training_Flatten;
     layer->backward_propagation_loop=backward_propagation_loop_Flatten;
     layer->backward_calculation=backward_calculation_Flatten;
     layer->build_shape_list = build_shape_list_Flatten;
     layer->compile_layer=compile_layer_Flatten;
-    layer->init_training_memory=init_memory_training;
-    layer->save_parameters=save_parameters_Flatten;
-    layer->read_parameters=read_parameters_Flatten;
     layer->parameters = NULL;
 }
 

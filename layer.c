@@ -6,6 +6,10 @@
 #include <unistd.h>
 #include <omp.h>
 
+//Default clear_parameters (do nothing)
+void clear_layer_parameters(layer* layer)
+{
+}
 
 //Clear memory of temporary stored inputs and outputs
 void clear_layer_training_memory(layer *layer)
@@ -112,6 +116,11 @@ tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, s
     return layer->outputs;
 }
 
+//Default save_parameters (do nothing)
+void save_layer_parameters(FILE* fp, layer* layer)
+{
+}
+
 void save_layer(FILE *fp, layer *layer)
 {
     fprintf(fp, "input_shape:");
@@ -130,7 +139,12 @@ void configure_default_layer(layer* layer)
     layer->forward_propagation_training_loop = forward_propagation_training_loop;
     layer->forward_propagation_predict_loop = forward_propagation_predict_loop;
     layer->init_predict_memory = init_memory_predict;
+    layer->init_training_memory = init_memory_training;
+    layer->clear_training_memory= clear_layer_training_memory;
     layer->clear_predict_memory = clear_layer_predict_memory;
+    layer->clear_parameters = clear_layer_parameters;
+    layer->save_parameters = save_layer_parameters;
+    layer->read_parameters = read_layer_parameters;
 }
 
 layer* build_layer(layer_type type, shape* output_shape)
@@ -144,6 +158,11 @@ layer* build_layer(layer_type type, shape* output_shape)
         case FLATTEN: configure_layer_Flatten(layer);break;
         default: configure_layer_FC(layer);break;
     }
+}
+
+//Default read_parameters (do nothing)
+void read_layer_parameters(FILE* fp, layer* layer)
+{
 }
 
 layer *read_layer(FILE *fp)
