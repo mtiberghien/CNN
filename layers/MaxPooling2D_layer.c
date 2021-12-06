@@ -49,10 +49,8 @@ tensor *forward_calculation_training_MaxPooling2D(const tensor *input, tensor *o
                 //Iterate trough each cell of input slice
                 for(int i_y=start_y;i_y<end_y;i_y++)
                 {
-                    int i_pool_y = i_y-start_y;
                     for(int i_x=start_x;i_x<end_y;i_x++)
                     {
-                        int i_pool_x = i_x-start_x;
                         double v = matrix_in[i_y][i_x];
                         max = v>max?v:max;
                     }
@@ -69,6 +67,66 @@ tensor *forward_calculation_training_MaxPooling2D(const tensor *input, tensor *o
 tensor *forward_calculation_predict_MaxPooling2D(const tensor *input, tensor *output, layer *layer)
 {
     forward_calculation_training_MaxPooling2D(input, output, NULL, layer);
+}
+
+tensor *backward_propagation_loop_MaxPooling2D(tensor *gradients, optimizer *optimizer, struct layer *layer, int layer_index)
+{
+    maxpool2D_parameters* params = (maxpool2D_parameters*)layer->parameters;
+    int output_channels = layer->output_shape->sizes[0];
+    int output_height = layer->output_shape->sizes[1];
+    int output_width = layer->output_shape->sizes[2];
+    int batch_size = layer->batch_size;
+    int pool_size = params->pool_size;
+    int stride = params->stride;
+    #pragma omp parallel for
+    for(int i=0;i<batch_size;i++)
+    {
+        double*** cube_in = (double***)layer->layer_inputs[i].v;
+        double*** cube_gradient_previous = (double***)layer->previous_gradients[i].v;
+        double*** cube_gradient=(double***)gradients[i].v;
+        for(int out_y=0;out_y<output_height;out_y++)
+        {
+            int start_y=out_y*stride;
+            int end_y=start_y+pool_size;
+            for(int out_x=0;out_x<output_width;out_x++)
+            {
+                int start_x=out_x*stride;
+                int end_x=start_x+pool_size;
+                //Iterate trough each output channel
+                for(int c_out =0;c_out<output_channels;c_out++)
+                {
+                    double** matrix_in = cube_in[c_out];
+                    double** matrix_gradient_previous = cube_gradient_previous[c_out];
+                    double** matrix_gradient = cube_gradient[c_out];
+                    double max = - __DBL_MAX__;
+                    int x_max=0;
+                    int y_max=0;
+                    //Iterate trough each cell of input slice
+                    for(int i_y=start_y;i_y<end_y;i_y++)
+                    {
+                        for(int i_x=start_x;i_x<end_y;i_x++)
+                        {
+                            double v = matrix_in[i_y][i_x];
+                            if(v>max)
+                            {
+                                max = v;
+                                x_max=i_x;
+                                y_max=i_y;
+                            }
+                        }
+                    }
+                    matrix_gradient_previous[y_max][x_max]=matrix_gradient[out_y][out_x];
+                    matrix_gradient[out_y][out_x]=0;
+                }
+            }
+        }        
+    }
+    return layer->previous_gradients;
+}
+
+//MaxPooling2D layer doesn't calculate anything and the function is not called  in backward loop
+void backward_calculation_MaxPooling2D(optimizer *optimizer, layer *layer, int layer_index)
+{
 }
 
 void compile_layer_MaxPooling2D(shape* input_shape, layer *layer)
@@ -97,7 +155,8 @@ void configure_layer_MaxPooling2D(layer* layer)
     layer->compile_layer = compile_layer_MaxPooling2D;
     layer->forward_calculation_training = forward_calculation_training_MaxPooling2D;
     layer->forward_calculation_predict = forward_calculation_predict_MaxPooling2D;
-    //TODO
+    layer->backward_propagation_loop = backward_propagation_loop_MaxPooling2D;
+    layer->backward_calculation = backward_calculation_MaxPooling2D;
 }
 
 layer* build_layer_MaxPooling2D(int pool_size, int stride)

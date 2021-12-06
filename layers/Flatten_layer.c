@@ -46,11 +46,6 @@ tensor *backward_propagation_loop_Flatten(tensor *gradients, optimizer *optimize
         tensor* gradient = &gradients[i];
         tensor* gradient_previous = &layer->previous_gradients[i];
         tensor* output = &layer->outputs[i];
-        if (layer->activation)
-        {
-            //Back propagate the gradient error tensor
-            gradient = layer->activation->activation_backward_propagation(&layer->activation_input[i], gradient, output, layer->activation);
-        }
         int* iterator = get_iterator(gradient_previous);
         int output_index=0;
         while(!gradient_previous->is_done(gradient_previous, iterator))
