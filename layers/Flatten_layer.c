@@ -1,6 +1,7 @@
 #include "../include/layer.h"
 
 
+
 void compile_layer_Flatten(shape* input_shape, layer *layer)
 {
     layer->input_shape = clone_shape(input_shape);
@@ -12,12 +13,7 @@ void compile_layer_Flatten(shape* input_shape, layer *layer)
     layer->output_shape->sizes[0]=output_size;
 }
 
-void build_shape_list_Flatten(layer* layer, shape_list* shape_list)
-{
-    shape_list->n_shapes=0;
-    shape_list->shapes=NULL;
-}
-
+//Forward calculation function for Flatten layer when training
 tensor *forward_calculation_training_Flatten(const tensor *input, tensor *output, tensor* activation_input, layer *layer)
 {
     int output_size = layer->output_shape->sizes[0];
@@ -28,37 +24,15 @@ tensor *forward_calculation_training_Flatten(const tensor *input, tensor *output
         double v = input->get_value(input, iterator);
         iterator = input->get_next(input, iterator);
         output->v[i]=v;
-        activation_input->v[i] = output->v[i];
         i++;
-    }
-    if (layer->activation)
-    {
-        //Execute activation function and return output tensor
-        output = layer->activation->activation_forward(output, layer->activation);
     }
     return output;
 }
 
-//Forward propagation function for Flatten layer
+//Forward calculation function for Flatten layer when predicting
 tensor *forward_calculation_predict_Flatten(const tensor *input, tensor *output, layer *layer)
 {
-    int output_size = layer->output_shape->sizes[0];
-    int* iterator = get_iterator(input);
-    int i=0;
-    while(!input->is_done(input, iterator))
-    {
-        double v = input->get_value(input, iterator);
-        iterator = input->get_next(input, iterator);
-        output->v[i]=v;
-        i++;
-    }
-    free(iterator);
-    if (layer->activation)
-    {
-        //Execute activation function and return output tensor
-        output = layer->activation->activation_forward(output, layer->activation);
-    }
-    return output;
+    forward_calculation_training_Flatten(input, output, NULL, layer);
 }
 
 //backward propagation loop for Flatten layer
@@ -99,21 +73,24 @@ void configure_layer_Flatten(layer* layer)
 {
     //Set used methods for the layer
     configure_default_layer(layer);
+    layer->parameters = NULL;
+    layer->init_training_memory = init_memory_training_no_activation;
+    layer->clear_training_memory= clear_layer_training_memory_no_activation;
+    layer->forward_propagation_training_loop= forward_propagation_training_loop_no_activation;
     layer->forward_calculation_predict=forward_calculation_predict_Flatten;
     layer->forward_calculation_training=forward_calculation_training_Flatten;
     layer->backward_propagation_loop=backward_propagation_loop_Flatten;
     layer->backward_calculation=backward_calculation_Flatten;
-    layer->build_shape_list = build_shape_list_Flatten;
     layer->compile_layer=compile_layer_Flatten;
     layer->parameters = NULL;
 }
 
-layer* build_layer_Flatten(activation* activation)
+layer* build_layer_Flatten()
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));
     configure_layer_Flatten(layer);
     layer->type = FLATTEN;
-    layer->activation = activation;
+    layer->activation = NULL;
     layer->output_shape = build_shape(OneD);
     return layer;
 }

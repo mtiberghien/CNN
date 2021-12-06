@@ -37,7 +37,7 @@ void clear_parameters_Conv2D(layer* layer)
 void save_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
-    fprintf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d stride:%d, padding:%hd\n", params->n_output_channels, params->kernel_width, params->kernel_height, params->stride, params->padding);
+    fprintf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d, stride:%d, padding:%hd\n", params->n_output_channels, params->kernel_width, params->kernel_height, params->stride, params->padding);
     save_tensor(fp, &params->filters);
     save_tensor(fp, &params->biases);
 }
@@ -45,7 +45,7 @@ void save_parameters_Conv2D(FILE* fp, layer* layer)
 void read_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
-    fscanf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d stride:%d, padding:%hd\n", &params->n_output_channels, &params->kernel_width, &params->kernel_height, &params->stride, &params->padding);
+    fscanf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d, stride:%d, padding:%hd\n", &params->n_output_channels, &params->kernel_width, &params->kernel_height, &params->stride, &params->padding);
     read_tensor(fp, &params->filters);
     read_tensor(fp, &params->biases);
 }

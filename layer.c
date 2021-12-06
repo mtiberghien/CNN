@@ -6,6 +6,13 @@
 #include <unistd.h>
 #include <omp.h>
 
+//Default empty shape_list
+void build_layer_shape_list(layer* layer, shape_list* shape_list)
+{
+    shape_list->n_shapes=0;
+    shape_list->shapes=NULL;
+}
+
 //Default clear_parameters (do nothing)
 void clear_layer_parameters(layer* layer)
 {
@@ -23,6 +30,20 @@ void clear_layer_training_memory(layer *layer)
     }
     free(layer->previous_gradients);
     free(layer->activation_input);
+    free(layer->layer_inputs);
+    free(layer->outputs);
+}
+
+//Clear training memory when no activation
+void clear_layer_training_memory_no_activation(layer *layer)
+{
+    #pragma omp parallel for
+    for (int i = 0; i < layer->batch_size; i++)
+    {
+        clear_tensor(&layer->outputs[i]);
+        clear_tensor(&layer->previous_gradients[i]);
+    }
+    free(layer->previous_gradients);
     free(layer->layer_inputs);
     free(layer->outputs);
 }
@@ -80,6 +101,40 @@ void init_memory_predict(layer* layer)
     }
 }
 
+void init_memory_training_no_activation(layer* layer)
+{
+    shape* input_shape = layer->input_shape;
+    shape* output_shape = layer->output_shape;
+    int batch_size = layer->batch_size;
+    layer->layer_inputs=(tensor*) malloc(sizeof(tensor)*batch_size);
+    layer->activation_input = NULL;
+    layer->previous_gradients = (tensor *)malloc(sizeof(tensor)*batch_size);
+    layer->outputs = malloc(sizeof(tensor) * batch_size);
+    #pragma omp parallel for
+    for(int i=0;i<batch_size;i++)
+    {
+        initialize_tensor(&layer->outputs[i], output_shape);
+        initialize_tensor(&layer->previous_gradients[i], input_shape);
+    }
+}
+
+//Forward propagation loop for layer with no activation
+tensor *forward_propagation_training_loop_no_activation(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
+{
+    // Loop into input batch
+    #pragma omp parallel for
+    for (int i = 0; i < batch_size; i++)
+    {
+        //Output tensor memory allocation
+        tensor *output = &layer->outputs[i];
+        const tensor* input = &inputs[i];
+        layer->layer_inputs[i]=inputs[i];
+        //Execute specific forward propagation
+        layer->forward_calculation_training(input, output, NULL, layer);
+    }
+    return layer->outputs;
+}
+
 //Default forward propagation loop
 tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
@@ -134,6 +189,8 @@ void save_layer(FILE *fp, layer *layer)
 
 
 
+
+
 void configure_default_layer(layer* layer)
 {
     layer->forward_propagation_training_loop = forward_propagation_training_loop;
@@ -145,6 +202,7 @@ void configure_default_layer(layer* layer)
     layer->clear_parameters = clear_layer_parameters;
     layer->save_parameters = save_layer_parameters;
     layer->read_parameters = read_layer_parameters;
+    layer->build_shape_list = build_layer_shape_list;
 }
 
 layer* build_layer(layer_type type, shape* output_shape)
@@ -155,6 +213,7 @@ layer* build_layer(layer_type type, shape* output_shape)
     switch(type)
     {
         case CONV2D: configure_layer_Conv2D(layer);break;
+        case MAXPOOL2D: configure_layer_MaxPooling2D(layer);break;
         case FLATTEN: configure_layer_Flatten(layer);break;
         default: configure_layer_FC(layer);break;
     }

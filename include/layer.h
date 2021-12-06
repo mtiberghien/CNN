@@ -8,7 +8,7 @@
 #include "common.h"
 #include <stdio.h>
 
-typedef enum layer_type{FC,CONV2D, FLATTEN} layer_type;
+typedef enum layer_type{FC,CONV2D, MAXPOOL2D, FLATTEN} layer_type;
 
 //Represent a layer of a sequential neural network
 typedef struct layer{
@@ -53,15 +53,21 @@ void save_layer(FILE *fp, layer* layer);
 layer* read_layer(FILE *fp);
 layer* build_layer_FC(int output_size, activation* activation);
 layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation);
-layer* build_layer_Flatten(activation* activation);
+layer* build_layer_Flatten();
+layer* build_layer_MaxPooling2D(int pool_size, int stride);
 void configure_layer_Conv2D(layer* layer);
 void configure_layer_FC(layer* layer);
 void configure_layer_Flatten(layer* layer);
+void configure_layer_MaxPooling2D(layer* layer);
 void init_memory_training(layer* layer);
 void clear_layer_predict_memory(layer* layer);
 void clear_layer_training_memory(layer *layer);
 void configure_default_layer(layer* layer);
 void clear_layer_parameters(struct layer* layer);
+void build_layer_shape_list(layer* layer, shape_list* shape_list);
 void save_layer_parameters(FILE*, struct layer* layer);
 void read_layer_parameters(FILE*, struct layer* layer);
+void clear_layer_training_memory_no_activation(layer *layer);
+void init_memory_training_no_activation(layer* layer);
+tensor *forward_propagation_training_loop_no_activation(const tensor *inputs, int batch_size, struct layer *layer, progression* progression);
 #endif
