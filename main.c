@@ -8,6 +8,10 @@
 #include "time.h"
 #include "omp.h"
 
+int get_background_color(double gray_scale)
+{
+    return 232 + (int)(gray_scale*24);
+}
 
 void draw_mnist_image(tensor* img)
 {
@@ -17,7 +21,7 @@ void draw_mnist_image(tensor* img)
         for(int k=0;k<28;k++)
         {
             double value = img_matrix[j][k];
-            printf("\033[%dm  ", value <=0.33?40: value<=0.66? 0:47);
+            printf("\033[48;5;%dm  ", get_background_color(value));
         }
         printf("\033[0m\n");
     }
