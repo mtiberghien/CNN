@@ -200,18 +200,25 @@ void backward_calculation_FC(optimizer *optimizer, layer *layer, int layer_index
     }
 }
 
-void save_parameters_FC(FILE* fp, layer* layer)
+void save_trainable_parameters_FC(FILE* fp, layer* layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
     save_tensor(fp, &params->weights);
     save_tensor(fp, &params->biases);
 }
 
-void read_parameters_FC(FILE* fp, layer* layer)
+void read_trainable_parameters_FC(FILE* fp, layer* layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
     read_tensor(fp, &params->weights);
     read_tensor(fp, &params->biases);
+}
+
+int get_trainable_parameters_count_FC(layer* layer)
+{
+    int total = layer->output_shape->sizes[0];
+    total+=total*layer->input_shape->sizes[0];
+    return total;
 }
 
 void configure_layer_FC(layer* layer)
@@ -229,8 +236,9 @@ void configure_layer_FC(layer* layer)
     layer->backward_propagation_loop = backward_propagation_loop_FC;
     layer->build_shape_list = build_shape_list_FC;
     layer->clear_parameters = clear_parameters_FC;
-    layer->read_parameters = read_parameters_FC;
-    layer->save_parameters = save_parameters_FC;
+    layer->read_trainable_parameters = read_trainable_parameters_FC;
+    layer->save_trainable_parameters = save_trainable_parameters_FC;
+    layer->get_trainable_parameters_count = get_trainable_parameters_count_FC;
 }
 
 layer* build_layer_FC(int output_size, activation* activation)

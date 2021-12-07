@@ -21,6 +21,7 @@ typedef struct model{
     tensor* (*predict)(tensor* inputs, int inputs_size, struct model*);
     training_result* (*fit)(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, struct model*);
     void (*compile)(shape* shape, optimizer* optimizer, loss*loss, struct model* model);
+    void (*summary)(struct model* model);
     optimizer* optimizer;
     loss* loss;
 } model;

@@ -8,7 +8,7 @@
 #include "common.h"
 #include <stdio.h>
 
-typedef enum layer_type{FC,CONV2D, MAXPOOL2D, FLATTEN} layer_type;
+typedef enum layer_type{FC,CONV2D, MAXPOOL2D, FLATTEN, PADDING2D} layer_type;
 
 //Represent a layer of a sequential neural network
 typedef struct layer{
@@ -33,7 +33,11 @@ typedef struct layer{
     void (*clear_parameters)(struct layer* layer);
     void (*save_parameters)(FILE*, struct layer* layer);
     void (*read_parameters)(FILE*, struct layer* layer);
+    void (*save_trainable_parameters)(FILE*, struct layer* layer);
+    void (*read_trainable_parameters)(FILE*, struct layer* layer);
     void (*build_shape_list)(struct layer* layer, shape_list* shape_list);
+    char* (*to_string)(struct layer* layer);
+    int (*get_trainable_parameters_count)(struct layer* layer);
     //Stores the forward propagation loop
     tensor* (*forward_propagation_training_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
     tensor* (*forward_propagation_predict_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
@@ -50,18 +54,25 @@ typedef struct layer{
 
 void clear_layer(layer*);
 void save_layer(FILE *fp, layer* layer);
+void save_trainable_parameters(FILE* fp, layer* layer);
 layer* read_layer(FILE *fp);
+void read_trainable_parameters(FILE* fp, layer* layer);
 layer* build_layer_FC(int output_size, activation* activation);
 layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation);
 layer* build_layer_Flatten();
-layer* build_layer_MaxPooling2D(int pool_size, int stride);
+layer* build_layer_MaxPooling2D(int pool_height, int pool_width, int stride);
+layer* build_layer_Padding2D(int padding_height, int padding_width);
 void configure_layer_Conv2D(layer* layer);
 void configure_layer_FC(layer* layer);
 void configure_layer_Flatten(layer* layer);
 void configure_layer_MaxPooling2D(layer* layer);
+void configure_layer_Padding2D(layer* layer);
 void init_memory_training(layer* layer);
+void init_memory_predict(layer* layer);
 void clear_layer_predict_memory(layer* layer);
 void clear_layer_training_memory(layer *layer);
+tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression);
+tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression);
 void configure_default_layer(layer* layer);
 void clear_layer_parameters(struct layer* layer);
 void build_layer_shape_list(layer* layer, shape_list* shape_list);

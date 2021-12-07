@@ -26,6 +26,7 @@ tensor *forward_calculation_training_Flatten(const tensor *input, tensor *output
         output->v[i]=v;
         i++;
     }
+    free(iterator);
     return output;
 }
 
@@ -50,7 +51,10 @@ tensor *backward_propagation_loop_Flatten(tensor *gradients, optimizer *optimize
         int output_index=0;
         while(!gradient_previous->is_done(gradient_previous, iterator))
         {
-            gradient_previous->set_value(gradient_previous, iterator, gradient->v[output_index]);
+            if(layer_index>0)
+            {
+                gradient_previous->set_value(gradient_previous, iterator, gradient->v[output_index]);
+            }
             iterator = gradient_previous->get_next(gradient_previous,iterator);
             gradient->v[output_index]=0;
             output_index++;
@@ -77,7 +81,6 @@ void configure_layer_Flatten(layer* layer)
     layer->backward_propagation_loop=backward_propagation_loop_Flatten;
     layer->backward_calculation=backward_calculation_Flatten;
     layer->compile_layer=compile_layer_Flatten;
-    layer->parameters = NULL;
 }
 
 layer* build_layer_Flatten()

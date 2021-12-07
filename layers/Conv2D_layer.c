@@ -16,6 +16,7 @@ typedef struct conv2D_parameters{
     tensor* filters_gradients;
     tensor biases;
     tensor biases_gradients;
+    struct layer* padding_layer;
 } conv2D_parameters;
 
 void build_shape_list_Conv2D(layer* layer, shape_list* shape_list)
@@ -30,15 +31,36 @@ void build_shape_list_Conv2D(layer* layer, shape_list* shape_list)
 void clear_parameters_Conv2D(layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
-    clear_tensors(params->filters, layer->output_shape->sizes[0]);
+    clear_tensors(params->filters, params->n_output_channels);
     free(params->filters);
     clear_tensor(&params->biases);
+    if(params->padding)
+    {
+        clear_layer(params->padding_layer);
+        free(params->padding_layer);
+    }
+}
+
+int get_trainable_parameters_count_Conv2D(layer* layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    int total = params->n_output_channels;
+    for(int i=0;i<params->n_output_channels;i++)
+    {
+        total += params->kernel_width*params->kernel_height*layer->input_shape->sizes[0];
+    }
+    return total;
 }
 
 void save_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     fprintf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d, stride:%d, padding:%hd\n", params->n_output_channels, params->kernel_width, params->kernel_height, params->stride, params->padding);
+}
+
+void save_trainable_parameters_Conv2D(FILE* fp, layer* layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     for(int i=0;i<params->n_output_channels;i++)
     {
         save_tensor(fp, &params->filters[i]);
@@ -50,6 +72,11 @@ void read_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     fscanf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d, stride:%d, padding:%hd\n", &params->n_output_channels, &params->kernel_width, &params->kernel_height, &params->stride, &params->padding);
+}
+
+void read_trainable_parameters_Conv2D(FILE* fp, layer* layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     for(int i=0;i<params->n_output_channels;i++)
     {
         read_tensor(fp, &params->filters[i]);
@@ -57,65 +84,25 @@ void read_parameters_Conv2D(FILE* fp, layer* layer)
     read_tensor(fp, &params->biases);
 }
 
-void unpad_gradient_previous(tensor* gradient_previous, tensor* p_gradient_previous, layer* layer)
+//Default forward propagation loop
+tensor *forward_propagation_training_loop_Conv2D(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
-    int padding_width = (params->kernel_width-1);
-    int padding_height = (params->kernel_height-1);
-    int output_height = gradient_previous->shape->sizes[1];
-    int output_width = gradient_previous->shape->sizes[2];
-    int output_channels = gradient_previous->shape->sizes[0];
-    int offset_x = padding_width/2;
-    int offset_y = padding_height/2;
-    double*** out = (double***)gradient_previous->v;
-    double*** in = (double***)p_gradient_previous->v;
-    for(int i=0;i<output_channels;i++)
+    if(params->padding)
     {
-        double** matrix_out = out[i];
-        double** matrix_in = in[i];
-        for(int j=0;j<output_height;j++)
-        {
-            for(int k=0;k<output_width;k++)
-            {
-                matrix_out[j][k]=matrix_in[j+offset_y][k+offset_x];
-            }
-        }
+        inputs =params->padding_layer->forward_propagation_training_loop(inputs, batch_size, params->padding_layer, NULL);
     }
+    forward_propagation_training_loop(inputs, batch_size, layer, progression);
 }
 
-tensor* pad_input(const tensor* input, layer* layer)
+tensor *forward_propagation_predict_loop_Conv2D(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
-    tensor* result = malloc(sizeof(tensor));
-    shape* shape = build_shape(ThreeD);
-    int padding_width = (params->kernel_width-1);
-    int padding_height = (params->kernel_height-1);
-    int input_height = input->shape->sizes[1];
-    int input_width = input->shape->sizes[2];
-    int input_channels = input->shape->sizes[0];
-    shape->sizes[0]=input_channels;
-    shape->sizes[1]=input_height + padding_height;
-    shape->sizes[2]=input_width + padding_width;
-    int offset_x = padding_width/2;
-    int offset_y = padding_height/2;
-    initialize_tensor(result, shape);
-    clear_shape(shape);
-    free(shape);
-    double*** out = (double***)result->v;
-    double*** in = (double***)input->v;
-    for(int i=0;i<input_channels;i++)
+    if(params->padding)
     {
-        double** matrix_out = out[i];
-        double** matrix_in = in[i];
-        for(int j=offset_y;j<input_height;j++)
-        {
-            for(int k=offset_x;k<input_width;k++)
-            {
-                matrix_out[j][k]=matrix_in[j][k];
-            }
-        }
+        inputs =params->padding_layer->forward_propagation_predict_loop(inputs, batch_size, params->padding_layer, NULL);
     }
-    return result;
+    forward_propagation_predict_loop(inputs, batch_size,layer, progression);
 }
 
 //Convolution calculation layer for training
@@ -129,20 +116,19 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
     int kernel_width = params->kernel_width;
     int kernel_height = params->kernel_height;
     int stride = params->stride;
-    tensor* p_input = params->padding? pad_input(input, layer):NULL;
-    const tensor* used_input = params->padding? p_input:input;
     double*** cube_out = (double***)output->v;
-    double*** cube_in = (double***)used_input->v;
+    double*** cube_in = (double***)input->v;
     double*** cube_activation_in = (double***)activation_input->v;
     //Iterate trough each output height
     for(int i=0;i<output_height;i++)
     {
+        //Calculates the associated matrix slice height in input space
         int start_y=i*stride;
         int end_y=start_y+kernel_height;
-        //And trough each output width
+        //Iterate trough each output width
         for(int j=0;j<output_width;j++)
         {
-            //Calculates the associated matrix slice locations in input space
+            //Calculates the associated matrix slice width in input space
             int start_x=j*stride;
             int end_x=start_x+kernel_width;
             //Iterate trough each output channel
@@ -175,11 +161,6 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
             }
         }
     }
-    if(params->padding)
-    {
-        clear_tensor(p_input);
-        free(p_input);
-    }
     if (layer->activation)
     {
         //Execute activation function and return output tensor
@@ -199,19 +180,18 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
     int kernel_width = params->kernel_width;
     int kernel_height = params->kernel_height;
     int stride = params->stride;
-    tensor* p_input = params->padding? pad_input(input, layer):NULL;
-    const tensor* used_input = params->padding? p_input:input;
     double*** cube_out = (double***)output->v;
-    double*** cube_in = (double***)used_input->v;
+    double*** cube_in = (double***)input->v;
     //Iterate trough each output height
     for(int i=0;i<output_height;i++)
     {
+        //Calculates the associated matrix slice height in input space
         int start_y=i*stride;
         int end_y=start_y+kernel_height;
-        //And trough each output width
+        //Iterate trough each output width
         for(int j=0;j<output_width;j++)
         {
-            //Calculates the associated matrix slice locations in input space
+            //Calculates the associated matrix slice width in input space
             int start_x=j*stride;
             int end_x=start_x+kernel_width;
             //Iterate trough each output channel
@@ -241,11 +221,6 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
             }
         }
     }
-    if(params->padding)
-    {
-        clear_tensor(p_input);
-        free(p_input);
-    }
     if (layer->activation)
     {
         //Execute activation function and return output tensor
@@ -272,17 +247,9 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
         tensor* gradient = &gradients[i];
         double*** cube_gradient = (double***)gradient->v;        
         tensor* output = &layer->outputs[i];
-        tensor p_gradient_previous;
-        tensor* p_input = NULL;
         double*** cube_gradient_previous = (double***)layer->previous_gradients[i].v;
-        if(params->padding)
-        {
-            p_input = pad_input(&layer->layer_inputs[i], layer);
-            initialize_tensor(&p_gradient_previous, p_input->shape);
-            cube_gradient_previous = (double***)p_gradient_previous.v;
-        }
-        const tensor* used_input = params->padding? p_input:&layer->layer_inputs[i];
-        double*** cube_input = (double***)used_input->v;
+        const tensor* input = &layer->layer_inputs[i];
+        double*** cube_input = (double***)input->v;
         if (layer->activation)
         {
             //Back propagate the gradient error tensor
@@ -334,16 +301,9 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                 }
             }
         }
-        if(params->padding)
-        {
-            unpad_gradient_previous(&layer->previous_gradients[i], &p_gradient_previous, layer);
-            clear_tensor(&p_gradient_previous);
-            clear_tensor(p_input);
-            free(p_input);
-        }
     }
     layer->backward_calculation(optimizer, layer, layer_index);
-    return layer->previous_gradients;
+    return params->padding? params->padding_layer->backward_propagation_loop(layer->previous_gradients, optimizer, params->padding_layer, 0): layer->previous_gradients;
 }
 
 //Backward propagation function for Fully Connected layer (perceptron)
@@ -388,6 +348,26 @@ void backward_calculation_Conv2D(optimizer *optimizer, layer *layer, int layer_i
     }
 }
 
+void init_memory_predict_Conv2D(layer* layer)
+{
+    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    init_memory_predict(layer);
+    if(params->padding)
+    {
+        params->padding_layer->init_predict_memory(params->padding_layer);
+    }
+}
+
+void clear_memory_predict_Conv2D(layer* layer)
+{
+   conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+   clear_layer_predict_memory(layer);
+   if(params->padding)
+   {
+       params->padding_layer->clear_predict_memory(params->padding_layer);
+   }
+}
+
 void init_memory_training_Conv2D(layer* layer)
 {
     init_memory_training(layer);
@@ -398,6 +378,10 @@ void init_memory_training_Conv2D(layer* layer)
         initialize_tensor(&params->filters_gradients[i], params->filters->shape);
     }
     initialize_tensor(&params->biases_gradients, params->biases.shape);
+    if(params->padding)
+    {
+        params->padding_layer->init_training_memory(params->padding_layer);
+    }
 }
 
 void clear_layer_training_memory_Conv2D(layer *layer)
@@ -407,12 +391,21 @@ void clear_layer_training_memory_Conv2D(layer *layer)
     clear_tensors(params->filters_gradients, params->n_output_channels);
     free(params->filters_gradients);
     clear_tensor(&params->biases_gradients);
+    if(params->padding)
+    {
+        params->padding_layer->clear_training_memory(params->padding_layer);
+    }
 }
 
 
 void compile_layer_Conv2D(shape* input_shape, layer *layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+    if(params->padding)
+    {
+        params->padding_layer->compile_layer(input_shape, params->padding_layer);
+        input_shape = params->padding_layer->output_shape;
+    }
     int kernel_width = params->kernel_width;
     int kernel_height = params->kernel_height;
     short padding = params->padding;
@@ -429,8 +422,6 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
     filter_shape->sizes[0]=input_shape->sizes[0];
     filter_shape->sizes[1]=params->kernel_height;
     filter_shape->sizes[2]=params->kernel_width;
-    clear_shape(filter_shape);
-    free(filter_shape);
     //Filters initialization
     double invert_rand_max = (double)1.0 / (double)RAND_MAX;
     int fan_in = input_shape->sizes[0]*input_shape->sizes[1]*input_shape->sizes[2];
@@ -440,6 +431,7 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
     for(int i=0;i<params->n_output_channels;i++)
     {
         tensor* filter = &params->filters[i];
+        initialize_tensor(filter, filter_shape);
         int* iterator = get_iterator(filter);
         while(filter->is_done(filter, iterator))
         {
@@ -448,6 +440,8 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
         }
         free(iterator);
     }
+    clear_shape(filter_shape);
+    free(filter_shape);
     shape* biases_shape = build_shape(OneD);
     biases_shape->sizes[0]=params->n_output_channels;
     initialize_tensor(&params->biases, biases_shape);
@@ -467,6 +461,8 @@ void configure_layer_Conv2D(layer* layer)
     layer->compile_layer = compile_layer_Conv2D;
     layer->init_training_memory = init_memory_training_Conv2D;
     layer->clear_training_memory = clear_layer_training_memory_Conv2D;
+    layer->init_predict_memory = init_memory_predict_Conv2D;
+    layer->clear_predict_memory = clear_memory_predict_Conv2D;
     layer->forward_calculation_training = forward_calculation_training_Conv2D;
     layer->forward_calculation_predict = forward_calculation_predict_Conv2D;
     layer->backward_calculation = backward_calculation_Conv2D;
@@ -474,18 +470,28 @@ void configure_layer_Conv2D(layer* layer)
     layer->clear_parameters = clear_parameters_Conv2D;
     layer->read_parameters = read_parameters_Conv2D;
     layer->save_parameters = save_parameters_Conv2D;
+    layer->read_trainable_parameters = read_trainable_parameters_Conv2D;
+    layer->save_trainable_parameters = save_trainable_parameters_Conv2D;
+    layer->forward_propagation_predict_loop = forward_propagation_predict_loop_Conv2D;
+    layer->forward_propagation_training_loop= forward_propagation_training_loop_Conv2D;
+    layer->backward_propagation_loop = backward_propagation_loop_Conv2D;
+    layer->get_trainable_parameters_count = get_trainable_parameters_count_Conv2D;
 }
 
 layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation)
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));
-    configure_layer_FC(layer);
+    configure_layer_Conv2D(layer);
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     params->n_output_channels = output_channel_size;
     params->kernel_width = kernel_width;
     params->kernel_height = kernel_height;
     params->stride = stride;
     params->padding = padding > 0;
+    if(params->padding)
+    {
+        params->padding_layer = build_layer_Padding2D(params->kernel_height-1, params->kernel_width-1);
+    }
     layer->type = CONV2D;
     layer->output_shape = build_shape(ThreeD);
     layer->output_shape->sizes[0]=output_channel_size;

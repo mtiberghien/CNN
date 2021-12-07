@@ -15,6 +15,7 @@ typedef struct shape_list{
 typedef struct optimizer{
     optimizer_type type;
     int n_parameters;
+    int n_layers;
     long t;
     void* parameters;
     //gradient calculation

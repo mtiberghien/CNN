@@ -44,8 +44,8 @@ void clear_layer_training_memory_no_activation(layer *layer)
         clear_tensor(&layer->previous_gradients[i]);
     }
     free(layer->previous_gradients);
-    free(layer->layer_inputs);
     free(layer->outputs);
+    free(layer->layer_inputs);
 }
 
 void clear_layer_predict_memory(layer* layer)
@@ -60,7 +60,11 @@ void clear_layer_predict_memory(layer* layer)
 
 void clear_layer(layer *layer)
 {
-    layer->clear_parameters(layer);
+    if(layer->parameters)
+    {
+        layer->clear_parameters(layer);
+        free(layer->parameters);
+    }
     if (layer->activation)
     {
         free(layer->activation);
@@ -107,9 +111,9 @@ void init_memory_training_no_activation(layer* layer)
     shape* output_shape = layer->output_shape;
     int batch_size = layer->batch_size;
     layer->layer_inputs=(tensor*) malloc(sizeof(tensor)*batch_size);
-    layer->activation_input = NULL;
     layer->previous_gradients = (tensor *)malloc(sizeof(tensor)*batch_size);
     layer->outputs = malloc(sizeof(tensor) * batch_size);
+    layer->activation_input = NULL;
     #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
@@ -176,6 +180,12 @@ void save_layer_parameters(FILE* fp, layer* layer)
 {
 }
 
+//Default save_trainable_parameters (do nothing)
+void save_trainable_parameters(FILE* fp, layer* layer)
+{
+
+}
+
 void save_layer(FILE *fp, layer *layer)
 {
     fprintf(fp, "input_shape:");
@@ -184,10 +194,27 @@ void save_layer(FILE *fp, layer *layer)
     save_shape(fp, layer->output_shape);
     fprintf(fp, ", type:%d\n", layer->type);
     layer->save_parameters(fp, layer);
+    layer->save_trainable_parameters(fp, layer);
     save_activation(fp, layer->activation);
 }
 
+char* to_string(layer* layer)
+{
+    switch(layer->type)
+    {
+        case FC: return "Dense_Layer";
+        case CONV2D: return "Conv2D_Layer";
+        case MAXPOOL2D: return "MaxPooling2D_Layer";
+        case FLATTEN: return "Flatten_Layer";
+        case PADDING2D: return "Padding2D_Layer";
+        default: return "Layer";break;
+    }
+}
 
+int get_layer_trainable_parameters_count(layer* layer)
+{
+    return 0;
+}
 
 
 
@@ -203,6 +230,10 @@ void configure_default_layer(layer* layer)
     layer->save_parameters = save_layer_parameters;
     layer->read_parameters = read_layer_parameters;
     layer->build_shape_list = build_layer_shape_list;
+    layer->read_trainable_parameters = read_trainable_parameters;
+    layer->save_trainable_parameters = save_trainable_parameters;
+    layer->get_trainable_parameters_count = get_layer_trainable_parameters_count;
+    layer->to_string= to_string;
 }
 
 layer* build_layer(layer_type type, shape* output_shape)
@@ -215,6 +246,7 @@ layer* build_layer(layer_type type, shape* output_shape)
         case CONV2D: configure_layer_Conv2D(layer);break;
         case MAXPOOL2D: configure_layer_MaxPooling2D(layer);break;
         case FLATTEN: configure_layer_Flatten(layer);break;
+        case PADDING2D: configure_layer_Padding2D(layer); break;
         default: configure_layer_FC(layer);break;
     }
 }
@@ -222,6 +254,12 @@ layer* build_layer(layer_type type, shape* output_shape)
 //Default read_parameters (do nothing)
 void read_layer_parameters(FILE* fp, layer* layer)
 {
+}
+
+//Default read_trainable_parameters (do nothing)
+void read_trainable_parameters(FILE* fp, layer* layer)
+{
+
 }
 
 layer *read_layer(FILE *fp)
@@ -236,8 +274,9 @@ layer *read_layer(FILE *fp)
     if (type >= 0)
     {
         layer *layer = build_layer(type, output_shape);
-        layer->compile_layer(input_shape, layer);
         layer->read_parameters(fp, layer);
+        layer->compile_layer(input_shape, layer);
+        layer->read_trainable_parameters(fp, layer);
         layer->activation = read_activation(fp);
         return layer;
     }

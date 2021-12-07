@@ -145,6 +145,7 @@ double*** initialize_cube(int height, int width, int depth)
     {
         cube[i]=initialize_matrix(height, width);
     }
+    return cube;
 }
 
 int* get_iterator(const tensor* tensor)
@@ -221,7 +222,7 @@ int* get_next_3D(const tensor* tensor, int* iterator)
 
 short is_done(const tensor* tensor, int* iterator)
 {
-    return tensor->shape->sizes[0] <=iterator[0];
+    return tensor->shape->sizes[0] <= iterator[0];
 }
 
 void initialize_tensor_1D(tensor* tensor)
@@ -249,9 +250,9 @@ void initialize_tensor_2D(tensor* tensor)
 
 void initialize_tensor_3D(tensor* tensor)
 {
-    int height = tensor->shape->sizes[0];
-    int width = tensor->shape->sizes[1];
-    int depth = tensor->shape->sizes[2];
+    int depth = tensor->shape->sizes[0];
+    int height = tensor->shape->sizes[1];
+    int width = tensor->shape->sizes[2];
     tensor->v=(double*)initialize_cube(height,width, depth);
     tensor->get_value = get_value_3D;
     tensor->set_value = set_value_3D;

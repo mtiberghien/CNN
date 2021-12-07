@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "include/common.h"
 #include <time.h>
+#include <string.h>
 
 void add_layer(layer* layer, model* model)
 {
@@ -93,7 +94,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
 {
     //Random indices support
     init_model_training_memory(batch_size, model);
-    int* indices = malloc(sizeof(int)*inputs_size);
+    int* indices = (int*)malloc(sizeof(int)*inputs_size);
     training_result* result = (training_result*)malloc(sizeof(training_result));
     int n_episodes = (inputs_size/batch_size + (inputs_size%batch_size == 0?0:1));
     result->n_results = n_episodes*epochs;
@@ -195,6 +196,46 @@ void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
     free(layers_shape_list);
 }
 
+void write_summary_line()
+{
+    printf("-----------------------------------------------------------\n");
+}
+
+void summary_shape_to_string(char* shape_string, shape* shape)
+{
+    for(int i=0;i<shape->dimension;i++)
+    {
+        char size[20];
+        sprintf(size, ",%d", shape->sizes[i]);
+        strcat(shape_string,size);
+    }
+    strcat(shape_string, ")");
+}
+
+void model_summary(model* model)
+{
+    write_summary_line();
+    printf("%-20s%-20s%-20s\n","Id","Shape","Parameters");
+    int total_parameters = 0;
+    write_summary_line();
+    for(int i=0;i<model->n_layers;i++)
+    {
+        
+        layer* layer = &model->layers[i];
+        char layer_name[20];
+        int params_count = layer->get_trainable_parameters_count(layer);
+        total_parameters+=params_count;
+        char params[20];
+        char shape_string[20]="(None";
+        summary_shape_to_string(shape_string,layer->output_shape);
+        sprintf(params, "%d",params_count);
+        sprintf(layer_name, "%s_%d", layer->to_string(layer), i+1);
+        printf("%-20s%-20s%-20s\n", layer_name,shape_string, params);
+    }
+    write_summary_line();
+    printf("Total trainable parameters:%d\n", total_parameters);
+}
+
 model* build_model()
 {
     model* result = (model*)malloc(sizeof(model));
@@ -204,6 +245,7 @@ model* build_model()
     result->predict=predict;
     result->fit=fit;
     result->compile = compile;
+    result->summary = model_summary;
     return result;
 }
 

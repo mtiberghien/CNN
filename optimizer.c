@@ -10,6 +10,7 @@ typedef struct adam_parameters{
     double beta_1;
     double beta_2;
     double eps;
+    int* indexes;
 } adam_parameters;
 
 typedef struct gd_parameters{
@@ -23,6 +24,7 @@ void clear_optimizer_adam(optimizer* optimizer)
     clear_tensors(params->v, optimizer->n_parameters);
     free(params->m);
     free(params->v);
+    free(params->indexes);
     free(params);
 }
 
@@ -38,7 +40,10 @@ void clear_shape_list(shape_list* shape_list)
     {
         clear_shape(&shape_list->shapes[i]);
     }
-    free(shape_list->shapes);
+    if(shape_list->shapes)
+    {
+        free(shape_list->shapes);
+    }
 }
 
 optimizer* build_optimizer(optimizer_type type)
@@ -70,8 +75,9 @@ double apply_gradient_GD(double value, double gradient, int layer_index, int par
 double apply_gradient_Adam(double value, double gradient, int layer_index, int param_index, int* tensor_indexes, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
-    tensor* m = &params->m[layer_index+param_index];
-    tensor* v = &params->v[layer_index+param_index];
+    int index = params->indexes[layer_index];
+    tensor* m = &params->m[index+param_index];
+    tensor* v = &params->v[index+param_index];
     double m_value = m->get_value(m, tensor_indexes);
     double m_value_next = (params->beta_1 * m_value) + (1 - params->beta_1) * gradient;
     double v_value = v->get_value(v, tensor_indexes);
@@ -87,6 +93,16 @@ void save_parameters_adam(FILE *fp, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
     fprintf(fp, "alpha:%lf, beta_1:%lf, beta_2:%lf, eps:%lf\n", params->alpha, params->beta_1, params->beta_2, params->eps);
+    fprintf(fp, "indexes:");
+    for(int i=0;i<optimizer->n_layers;i++)
+    {
+        fprintf(fp, "%d", params->indexes[i]);
+        if(i<optimizer->n_layers-1)
+        {
+            fprintf(fp, ",");
+        }
+    }
+    fprintf(fp, "\n");
     for(int i=0;i<optimizer->n_parameters;i++)
     {
         fprintf(fp, "shape:");
@@ -106,12 +122,23 @@ void save_parameters_gd(FILE *fp, optimizer* optimizer)
 void read_parameters_adam(FILE *fp, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
-    int n_layers = optimizer->n_parameters;
+    int n_parameters = optimizer->n_parameters;
     fscanf(fp, "alpha:%lf, beta_1:%lf, beta_2:%lf, eps:%lf\n", &params->alpha, &params->beta_1, &params->beta_2, &params->eps);
     params->eps=params->eps == 0 ? 1E-7:params->eps;
-    params->m=(tensor*)malloc(sizeof(tensor)*n_layers);
-    params->v=(tensor*)malloc(sizeof(tensor)*n_layers);
-    for(int i=0;i<n_layers;i++)
+    params->m=(tensor*)malloc(sizeof(tensor)*n_parameters);
+    params->v=(tensor*)malloc(sizeof(tensor)*n_parameters);
+    params->indexes = (int*)malloc(sizeof(int)*optimizer->n_layers);
+    fscanf(fp, "indexes:");
+    for(int i=0;i<optimizer->n_layers;i++)
+    {
+        fscanf(fp, "%d", &params->indexes[i]);
+        if(i<optimizer->n_layers-1)
+        {
+            fscanf(fp, ",");
+        }
+    }
+    fscanf(fp, "\n");
+    for(int i=0;i<n_parameters;i++)
     {
         tensor* m = &params->m[i];
         tensor* v = &params->v[i];
@@ -157,9 +184,11 @@ void compile_Adam(shape_list* layers_shape_list, int n_layers, struct optimizer*
     adam_parameters* params =(adam_parameters*)optimizer->parameters;
     params->m=(tensor*)malloc(sizeof(tensor)*total_params);
     params->v=(tensor*)malloc(sizeof(tensor)*total_params);
+    params->indexes=(int*)malloc(sizeof(int)*n_layers);
     int index =0;
     for(int i=0;i<n_layers;i++)
     {
+        params->indexes[i]=index;
         shape_list s_l = layers_shape_list[i];
         for(int j=0;j<s_l.n_shapes;j++)
         {
@@ -190,19 +219,20 @@ optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, doub
 
 void save_optimizer(FILE* fp, optimizer* optimizer)
 {
-    fprintf(fp, "n_parameters:%d, type:%d, t:%ld\n", optimizer->n_parameters, optimizer->type, optimizer->t);
+    fprintf(fp, "n_layers:%d, n_parameters:%d, type:%d, t:%ld\n", optimizer->n_layers, optimizer->n_parameters, optimizer->type, optimizer->t);
     optimizer->save_params(fp, optimizer);
 }
 
 optimizer* read_optimizer(FILE* fp)
 {
-    int n_layers, type;
+    int n_layers, n_parameters, type;
     long t;
-    fscanf(fp, "n_parameters:%d, type:%d, t:%ld\n", &n_layers, &type, &t);
+    fscanf(fp, "n_layers:%d, n_parameters:%d, type:%d, t:%ld\n", &n_layers, &n_parameters, &type, &t);
     if(type>=0)
     {
         optimizer* optimizer = build_optimizer(type);
-        optimizer->n_parameters = n_layers;
+        optimizer->n_parameters = n_parameters;
+        optimizer->n_layers = n_layers;
         optimizer->t = t;
         optimizer->read_params(fp, optimizer);
         return optimizer;
