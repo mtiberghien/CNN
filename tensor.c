@@ -54,6 +54,7 @@ void clear_tensors(tensor* tensors, int n_tensor){
 void apply_func(tensor* tensor, double(*func)(double))
 {
     int* iterator = get_iterator(tensor);
+    int i=0;
     while(!tensor->is_done(tensor, iterator))
     {
         tensor->set_value(tensor, iterator, func(tensor->get_value(tensor, iterator)));

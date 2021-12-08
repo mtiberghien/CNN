@@ -119,24 +119,26 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
     double*** cube_out = (double***)output->v;
     double*** cube_in = (double***)input->v;
     double*** cube_activation_in = (double***)activation_input->v;
-    //Iterate trough each output height
-    for(int i=0;i<output_height;i++)
+    //Iterate trough each output channel
+    for(int c_out =0;c_out<output_channels;c_out++)
     {
-        //Calculates the associated matrix slice height in input space
-        int start_y=i*stride;
-        int end_y=start_y+kernel_height;
-        //Iterate trough each output width
-        for(int j=0;j<output_width;j++)
+        double** matrix_out = cube_out[c_out];
+        double** matrix_activation_in = cube_activation_in[c_out];
+        double*** filters = (double***)params->filters[c_out].v;
+        //Iterate trough each output height
+        for(int i=0;i<output_height;i++)
         {
-            //Calculates the associated matrix slice width in input space
-            int start_x=j*stride;
-            int end_x=start_x+kernel_width;
-            //Iterate trough each output channel
-            for(int c_out =0;c_out<output_channels;c_out++)
+            //Calculates the associated matrix slice height in input space
+            int start_y=i*stride;
+            int end_y=start_y+kernel_height;
+            double* array_out = matrix_out[i];
+            double* array_activation_in = matrix_activation_in[i];
+            //Iterate trough each output width
+            for(int j=0;j<output_width;j++)
             {
-                double** matrix_out = cube_out[c_out];
-                double** matrix_activation_in = cube_activation_in[c_out];
-                double*** filters = (double***)params->filters[c_out].v;
+                //Calculates the associated matrix slice width in input space
+                int start_x=j*stride;
+                int end_x=start_x+kernel_width;
                 //Iterate trough each input channel
                 for(int c_in=0;c_in<input_channels;c_in++)
                 {
@@ -146,18 +148,20 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
                     for(int i_y=start_y;i_y<end_y;i_y++)
                     {
                         int i_kernel_y = i_y-start_y;
-                        for(int i_x=start_x;i_x<end_y;i_x++)
+                        double* array_filter=matrix_filter[i_kernel_y];
+                        double* array_in=matrix_in[i_y];
+                        for(int i_x=start_x;i_x<end_x;i_x++)
                         {
                             int i_kernel_x = i_x-start_x;
                             //Sum the product of each input channel with associated output channel filter
-                            matrix_out[i][j]+=matrix_filter[i_kernel_y][i_kernel_x]*matrix_in[i_y][i_x];
+                            array_out[j]+=array_filter[i_kernel_x]*array_in[i_x];
                         }
                     }
                 }
                 //Add biases to each channel
-                matrix_out[i][j]+=params->biases.v[c_out];
+                array_out[j]+=params->biases.v[c_out];
                 //Copyt value of output before activation (used in back propagation)
-                matrix_activation_in[i][j]=matrix_out[i][j];
+                array_activation_in[j]=array_out[j];
             }
         }
     }
@@ -172,7 +176,7 @@ tensor *forward_calculation_training_Conv2D(const tensor *input, tensor *output,
 //Convolution calculation layer for prediction only
 tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, layer *layer)
 {
-    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
+   conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     int output_width = layer->output_shape->sizes[2];
     int output_height = layer->output_shape->sizes[1];
     int output_channels = layer->output_shape->sizes[0];
@@ -182,23 +186,24 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
     int stride = params->stride;
     double*** cube_out = (double***)output->v;
     double*** cube_in = (double***)input->v;
-    //Iterate trough each output height
-    for(int i=0;i<output_height;i++)
+    //Iterate trough each output channel
+    for(int c_out =0;c_out<output_channels;c_out++)
     {
-        //Calculates the associated matrix slice height in input space
-        int start_y=i*stride;
-        int end_y=start_y+kernel_height;
-        //Iterate trough each output width
-        for(int j=0;j<output_width;j++)
+        double** matrix_out = cube_out[c_out];
+        double*** filters = (double***)params->filters[c_out].v;
+        //Iterate trough each output height
+        for(int i=0;i<output_height;i++)
         {
-            //Calculates the associated matrix slice width in input space
-            int start_x=j*stride;
-            int end_x=start_x+kernel_width;
-            //Iterate trough each output channel
-            for(int c_out =0;c_out<output_channels;c_out++)
+            //Calculates the associated matrix slice height in input space
+            int start_y=i*stride;
+            int end_y=start_y+kernel_height;
+            double* array_out = matrix_out[i];
+            //Iterate trough each output width
+            for(int j=0;j<output_width;j++)
             {
-                double** matrix_out = cube_out[c_out];
-                double*** filters = (double***)params->filters[c_out].v;
+                //Calculates the associated matrix slice width in input space
+                int start_x=j*stride;
+                int end_x=start_x+kernel_width;
                 //Iterate trough each input channel
                 for(int c_in=0;c_in<input_channels;c_in++)
                 {
@@ -208,16 +213,18 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
                     for(int i_y=start_y;i_y<end_y;i_y++)
                     {
                         int i_kernel_y = i_y-start_y;
-                        for(int i_x=start_x;i_x<end_y;i_x++)
+                        double* array_filter=matrix_filter[i_kernel_y];
+                        double* array_in=matrix_in[i_y];
+                        for(int i_x=start_x;i_x<end_x;i_x++)
                         {
                             int i_kernel_x = i_x-start_x;
                             //Sum the product of each input channel with associated output channel filter
-                            matrix_out[i][j]+=matrix_filter[i_kernel_y][i_kernel_x]*matrix_in[i_y][i_x];
+                            array_out[j]+=array_filter[i_kernel_x]*array_in[i_x];
                         }
                     }
                 }
                 //Add biases to each channel
-                matrix_out[i][j]+=params->biases.v[c_out];
+                array_out[j]+=params->biases.v[c_out];
             }
         }
     }
@@ -241,11 +248,10 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
     int kernel_height = params->kernel_height;
     int stride = params->stride;
     double* biases_gradients= (double*)params->biases_gradients.v;
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
-        tensor* gradient = &gradients[i];
-        double*** cube_gradient = (double***)gradient->v;        
+        tensor* gradient = &gradients[i];       
         tensor* output = &layer->outputs[i];
         double*** cube_gradient_previous = (double***)layer->previous_gradients[i].v;
         const tensor* input = &layer->layer_inputs[i];
@@ -259,7 +265,47 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
         {
             double*** cube_filter = (double***)params->filters[c_out].v;
             double*** cube_filter_gradient = (double***) params->filters_gradients[c_out].v;
-            double** matrix_gradient = cube_gradient[c_out];
+            double** matrix_gradient = ((double***)gradient->v)[c_out];
+            //Iterate trough each output height
+            for(int i=0;i<kernel_height;i++)
+            {
+                int start_y=i*stride;
+                int end_y=start_y+output_height;
+                //And trough each output width
+                for(int j=0;j<kernel_width;j++)
+                {
+                    //Calculates the associated matrix slice locations in input space
+                    int start_x=j*stride;
+                    int end_x=start_x+output_width;
+                    //Iterate trough each input channel
+                    for(int c_in=0;c_in<input_channels;c_in++)
+                    {
+                        double* array_filter_gradient = cube_filter_gradient[c_in][i];
+                        double** matrix_in = cube_input[c_in];
+                        double** matrix_gradient_previous= cube_gradient_previous[c_in];
+                        double filter_i_j = cube_filter[c_in][i][j];
+                        //Iterate trough each cell of input slice
+                        for(int i_y=start_y;i_y<end_y;i_y++)
+                        {
+                            int i_gradient_y = i_y-start_y;
+                            double* array_in = matrix_in[i_y];
+                            double* array_gradient_previous= matrix_gradient_previous[i_y];
+                            double* array_gradient = matrix_gradient[i_gradient_y];
+                            for(int i_x=start_x;i_x<end_x;i_x++)
+                            {
+                                int i_gradient_x = i_x-start_x;
+                                double gradient_y_x = array_gradient[i_gradient_x];
+                                //Sum the product of each input channel with associated output gradient into the filter_gradient
+                                array_filter_gradient[j]+=gradient_y_x*array_in[i_x];
+                                if(layer_index>0)
+                                {
+                                    array_gradient_previous[i_x]+=gradient_y_x*filter_i_j;
+                                }                               
+                            }
+                        }
+                    }
+                }
+            }
             //Iterate trough each output height
             for(int i=0;i<output_height;i++)
             {
@@ -271,33 +317,8 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                     double gradient_ij = matrix_gradient[i][j];
                     //biases_gradient is the sum of batch gradients
                     biases_gradients[c_out]+=gradient_ij;
+                    //Reset gradient for next episode
                     matrix_gradient[i][j]=0;
-                    //Calculates the associated matrix slice locations in input space
-                    int start_x=j*stride;
-                    int end_x=start_x+kernel_width;
-                    //Iterate trough each input channel
-                    for(int c_in=0;c_in<input_channels;c_in++)
-                    {
-                        double** matrix_filter = cube_filter[c_in];
-                        double** matrix_filter_gradient = cube_filter_gradient[c_in];
-                        double** matrix_in = cube_input[c_in];
-                        double** matrix_gradient_previous= cube_gradient_previous[c_in];
-                        //Iterate trough each cell of input slice
-                        for(int i_y=start_y;i_y<end_y;i_y++)
-                        {
-                            int i_kernel_y = i_y-start_y;
-                            for(int i_x=start_x;i_x<end_y;i_x++)
-                            {
-                                int i_kernel_x = i_x-start_x;
-                                //Sum the product of each input channel with associated output gradient into the filter_gradient
-                                matrix_filter_gradient[i_kernel_y][i_kernel_x]+=matrix_gradient[i][j]*matrix_in[i_y][i_x];
-                                if(layer_index>0)
-                                {
-                                    matrix_gradient_previous[i_y][i_x]+=matrix_filter[i_kernel_y][i_kernel_x]*gradient_ij;
-                                }                                
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -319,8 +340,8 @@ void backward_calculation_Conv2D(optimizer *optimizer, layer *layer, int layer_i
     //Update biases using new gradient
     for (int c_out = 0; c_out < output_channel; c_out++)
     {
-        tensor filter = params->filters[c_out];
-        int* iterator = get_iterator(&filter);
+        tensor* filter = &params->filters[c_out];
+        int* iterator = get_iterator(filter);
         double*** cube_filters = (double***)params->filters[c_out].v;
         double*** cube_filters_gradient = (double***)params->filters_gradients[c_out].v;
         //Optimizer update bias
@@ -334,13 +355,15 @@ void backward_calculation_Conv2D(optimizer *optimizer, layer *layer, int layer_i
             //Calculate the gradient for previous layer and update weights
             for(int i_y=0;i_y<kernel_height;i_y++)
             {
+                double* array_filters = matrix_filters[i_y];
+                double* array_filters_gradient = matrix_filters_gradient[i_y];
                 for(int i_x=0;i_x<kernel_width;i_x++)
                 {
                     //Sum the product of each input channel with associated output channel filter
-                    optimizer->apply_gradient(matrix_filters[i_y][i_x], matrix_filters_gradient[i_y][i_x], layer_index, 1, iterator, optimizer);
-                    iterator = filter.get_next(&filter, iterator);
-                    //Reset gradient for next episode
-                    matrix_filters_gradient[i_y][i_x]=0;
+                    optimizer->apply_gradient(array_filters[i_x], array_filters_gradient[i_x], layer_index, 1, iterator, optimizer);
+                    iterator = filter->get_next(filter, iterator);
+                    //Reset filters gradient for next episode
+                    array_filters_gradient[i_x]=0;
                 }
             }
         }
@@ -433,9 +456,10 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
         tensor* filter = &params->filters[i];
         initialize_tensor(filter, filter_shape);
         int* iterator = get_iterator(filter);
-        while(filter->is_done(filter, iterator))
+        while(!filter->is_done(filter, iterator))
         {
-            filter->set_value(filter, iterator, (2 * limit * ((double)rand() * invert_rand_max)) - limit);
+            double v = (2 * limit * ((double)rand() * invert_rand_max)) - limit;
+            filter->set_value(filter, iterator, v);
             iterator = filter->get_next(filter, iterator);
         }
         free(iterator);

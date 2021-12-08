@@ -68,7 +68,7 @@ void train_mlp()
     dataset* test = getMNISTData(10000, 1);
     model* model = build_model();
     model->add_layer(build_layer_Flatten(), model);
-    model->add_layer(build_layer_FC(512, build_activation(RELU)), model);
+    model->add_layer(build_layer_FC(128, build_activation(RELU)), model);
     model->add_layer(build_layer_FC(10, build_activation(SOFTMAX)), model);
     model->compile(train->features_shape, build_optimizer(ADAM), build_loss(CCE), model);
     model->summary(model);
@@ -87,6 +87,61 @@ void train_mlp()
     test_model(filename); 
 }
 
+void test_flatten()
+{
+    shape* shape = build_shape(ThreeD);
+    shape->sizes[0]=2;
+    shape->sizes[1]=2;
+    shape->sizes[2]=3;
+    tensor test;
+    initialize_tensor(&test, shape);
+    clear_shape(shape);
+    free(shape);
+    int* iterator = get_iterator(&test);
+    int i=0;
+    while(!test.is_done(&test, iterator))
+    {
+        test.set_value(&test, iterator, i++);
+        iterator = test.get_next(&test, iterator);
+    }
+    free(iterator);
+    model* model = build_model();
+    model->add_layer(build_layer_Flatten(), model);
+    model->compile(test.shape, build_optimizer(GD), build_loss(MSE), model);
+    tensor truth;
+    initialize_tensor(&truth, model->layers[0].output_shape);
+    model->fit(&test, &truth, 1, 1, 1, model);
+    clear_model(model);
+}
+
+void test_Conv()
+{
+    shape* shape = build_shape(ThreeD);
+    shape->sizes[0]=2;
+    shape->sizes[1]=5;
+    shape->sizes[2]=5;
+    tensor test;
+    initialize_tensor(&test, shape);
+    clear_shape(shape);
+    free(shape);
+    int* iterator=get_iterator(&test);
+    int i=0;
+    while(!test.is_done(&test, iterator))
+    {
+        test.set_value(&test, iterator, 10E-3*i++);
+        iterator = test.get_next(&test, iterator);
+    }
+    free(iterator);
+    print_tensor(&test);
+    model* model = build_model();
+    model->add_layer(build_layer_Conv2D(3,3,3,1,0, build_activation(RELU)), model);
+    model->compile(test.shape, build_optimizer(GD), build_loss(MSE), model);
+    tensor truth;
+    initialize_tensor(&truth, model->layers[0].output_shape);
+    model->fit(&test, &truth,1,1,1, model);
+    clear_model(model);
+}
+
 void train_cnn()
 {
     char* filename = "save/cnn_model.txt";
@@ -95,15 +150,13 @@ void train_cnn()
     model* model = build_model();
     model->add_layer(build_layer_Conv2D(32, 3,3, 1, 0, build_activation(RELU)), model);
     model->add_layer(build_layer_MaxPooling2D(2,2,2), model);
-    model->add_layer(build_layer_Conv2D(64, 3,3, 1, 0, build_activation(RELU)), model);
-    model->add_layer(build_layer_MaxPooling2D(2,2,2), model);
-    model->add_layer(build_layer_Conv2D(64, 3,3, 1, 0, build_activation(RELU)), model);
     model->add_layer(build_layer_Flatten(), model);
     model->add_layer(build_layer_FC(64, build_activation(RELU)), model);
     model->add_layer(build_layer_FC(10, build_activation(SOFTMAX)), model);
     model->compile(train->features_shape, build_optimizer(ADAM), build_loss(CCE), model);
     save_model(model, filename);
-    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 1, model);
+    show_model(filename);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 32, 1, model);
     clear_result(result);
     free(result);
     save_model(model, filename);
@@ -119,5 +172,5 @@ void train_cnn()
 
 int main(){
     omp_set_num_threads(10);
-    train_mlp();
+    train_cnn();
 }

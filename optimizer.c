@@ -63,6 +63,7 @@ void compile_default(shape_list* layers_shape_list, int n_layers, struct optimiz
         total_params+=layers_shape_list[i].n_shapes;
     }
     optimizer->n_parameters = total_params;
+    optimizer->n_layers=n_layers;
 }
 
 //Simple gradient descent calculation

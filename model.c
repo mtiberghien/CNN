@@ -287,9 +287,12 @@ void save_model(model* model, char* filename)
         fprintf(fp, "n_layers:%d\n", model->n_layers);
         for(int i=0;i<model->n_layers;i++)
         {
+            fprintf(fp, "Layer %d\n", i+1);
             save_layer(fp, &model->layers[i]);
         }
+        fprintf(fp, "Optimizer\n");
         save_optimizer(fp, model->optimizer);
+        fprintf(fp, "Loss\n");
         save_loss(fp, model->loss);
     }
     fclose(fp);
@@ -304,15 +307,19 @@ model* read_model(char* filename)
     if(fp!= NULL)
     {
         fscanf(fp, "n_layers:%d\n", &n_layers);
+        int layer_number;
         for(int i=0;i<n_layers;i++)
         {
+           fscanf(fp, "Layer %d\n", &layer_number);
            layer* layer = read_layer(fp);
            if(layer!=NULL)
            {
                model->add_layer(layer, model);
            }
         }
+        fscanf(fp, "Optimizer\n");
         model->optimizer = read_optimizer(fp);
+        fscanf(fp, "Loss\n");
         model->loss = read_loss(fp);
     }
     return model;

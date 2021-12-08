@@ -160,7 +160,7 @@ tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, 
 tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     // Loop into input batch
-    #pragma omp parallel for shared(progression)
+    #pragma omp parallel for
     for (int i = 0; i < batch_size; i++)
     {
         //Output tensor memory allocation
@@ -193,7 +193,9 @@ void save_layer(FILE *fp, layer *layer)
     fprintf(fp, ", output_shape:");
     save_shape(fp, layer->output_shape);
     fprintf(fp, ", type:%d\n", layer->type);
+    fprintf(fp, "Parameters\n");
     layer->save_parameters(fp, layer);
+    fprintf(fp, "Trainable parameters\n");
     layer->save_trainable_parameters(fp, layer);
     save_activation(fp, layer->activation);
 }
@@ -274,8 +276,10 @@ layer *read_layer(FILE *fp)
     if (type >= 0)
     {
         layer *layer = build_layer(type, output_shape);
+        fscanf(fp, "Parameters\n");
         layer->read_parameters(fp, layer);
         layer->compile_layer(input_shape, layer);
+        fscanf(fp, "Trainable parameters\n");
         layer->read_trainable_parameters(fp, layer);
         layer->activation = read_activation(fp);
         return layer;
