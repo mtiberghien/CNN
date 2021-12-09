@@ -46,7 +46,7 @@ dataset* getMNISTData(int limit, short test)
             while(ptr != NULL && i < n_features)
             {
                 if(column > 0){
-                    double d =  strtod(ptr, NULL) * norm_factor;
+                    double d =  (strtod(ptr, NULL) * norm_factor);
                     feature->set_value(feature, iterator,d);
                     iterator = feature->get_next(feature, iterator);
                     i++;

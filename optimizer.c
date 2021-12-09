@@ -93,7 +93,7 @@ double apply_gradient_Adam(double value, double gradient, int layer_index, int p
 void save_parameters_adam(FILE *fp, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
-    fprintf(fp, "alpha:%lf, beta_1:%lf, beta_2:%lf, eps:%lf\n", params->alpha, params->beta_1, params->beta_2, params->eps);
+    fprintf(fp, "alpha:%le, beta_1:%le, beta_2:%le, eps:%le\n", params->alpha, params->beta_1, params->beta_2, params->eps);
     fprintf(fp, "indexes:");
     for(int i=0;i<optimizer->n_layers;i++)
     {
@@ -124,8 +124,7 @@ void read_parameters_adam(FILE *fp, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
     int n_parameters = optimizer->n_parameters;
-    fscanf(fp, "alpha:%lf, beta_1:%lf, beta_2:%lf, eps:%lf\n", &params->alpha, &params->beta_1, &params->beta_2, &params->eps);
-    params->eps=params->eps == 0 ? 1E-7:params->eps;
+    fscanf(fp, "alpha:%le, beta_1:%le, beta_2:%le, eps:%le\n", &params->alpha, &params->beta_1, &params->beta_2, &params->eps);
     params->m=(tensor*)malloc(sizeof(tensor)*n_parameters);
     params->v=(tensor*)malloc(sizeof(tensor)*n_parameters);
     params->indexes = (int*)malloc(sizeof(int)*optimizer->n_layers);

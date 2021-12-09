@@ -153,6 +153,7 @@ tensor *backward_propagation_loop_FC(tensor *gradients, optimizer *optimizer, st
         }
         for(int j=0;j<output_size;j++)
         {
+            //Reset output for next episode
             output->v[j]=0;
             double gradient_j = gradient->v[j];
             gradient->v[j]=0;

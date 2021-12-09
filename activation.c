@@ -9,7 +9,7 @@ double relu(double x)
 
 double relu_prime(double x)
 {
-    return x<0?0:1;
+    return x<=0?0:1;
 }
 
 

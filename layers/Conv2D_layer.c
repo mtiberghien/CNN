@@ -248,7 +248,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
     int kernel_height = params->kernel_height;
     int stride = params->stride;
     double* biases_gradients= (double*)params->biases_gradients.v;
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(int i=0;i<batch_size;i++)
     {
         tensor* gradient = &gradients[i];       
@@ -266,6 +266,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
             double*** cube_filter = (double***)params->filters[c_out].v;
             double*** cube_filter_gradient = (double***) params->filters_gradients[c_out].v;
             double** matrix_gradient = ((double***)gradient->v)[c_out];
+            double** matrix_output = ((double***)output->v)[c_out];
             //Iterate trough each output height
             for(int i=0;i<kernel_height;i++)
             {
@@ -283,7 +284,8 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                         double* array_filter_gradient = cube_filter_gradient[c_in][i];
                         double** matrix_in = cube_input[c_in];
                         double** matrix_gradient_previous= cube_gradient_previous[c_in];
-                        double filter_i_j = cube_filter[c_in][i][j];
+                        //180 Rotation
+                        double filter_ij = cube_filter[c_in][i][j];
                         //Iterate trough each cell of input slice
                         for(int i_y=start_y;i_y<end_y;i_y++)
                         {
@@ -299,7 +301,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                                 array_filter_gradient[j]+=gradient_y_x*array_in[i_x];
                                 if(layer_index>0)
                                 {
-                                    array_gradient_previous[i_x]+=gradient_y_x*filter_i_j;
+                                    array_gradient_previous[i_x]+=gradient_y_x*filter_ij;
                                 }                               
                             }
                         }
@@ -309,16 +311,20 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
             //Iterate trough each output height
             for(int i=0;i<output_height;i++)
             {
+                double* array_gradient = matrix_gradient[i];
+                double* array_output = matrix_output[i];
                 int start_y=i*stride;
                 int end_y=start_y+kernel_height;
                 //And trough each output width
                 for(int j=0;j<output_width;j++)
                 {
-                    double gradient_ij = matrix_gradient[i][j];
+                    //Reset output for next episode
+                    array_output[j]=0;
+                    double gradientij = array_gradient[j];
                     //biases_gradient is the sum of batch gradients
-                    biases_gradients[c_out]+=gradient_ij;
+                    biases_gradients[c_out]+=gradientij;
                     //Reset gradient for next episode
-                    matrix_gradient[i][j]=0;
+                    array_gradient[j]=0;
                 }
             }
         }
@@ -360,7 +366,7 @@ void backward_calculation_Conv2D(optimizer *optimizer, layer *layer, int layer_i
                 for(int i_x=0;i_x<kernel_width;i_x++)
                 {
                     //Sum the product of each input channel with associated output channel filter
-                    optimizer->apply_gradient(array_filters[i_x], array_filters_gradient[i_x], layer_index, 1, iterator, optimizer);
+                    array_filters[i_x]=optimizer->apply_gradient(array_filters[i_x], array_filters_gradient[i_x], layer_index, 1, iterator, optimizer);
                     iterator = filter->get_next(filter, iterator);
                     //Reset filters gradient for next episode
                     array_filters_gradient[i_x]=0;

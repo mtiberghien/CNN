@@ -5,6 +5,7 @@
 #include "include/common.h"
 #include <time.h>
 #include <string.h>
+#include "include/utils.h"
 
 void add_layer(layer* layer, model* model)
 {

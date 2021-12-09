@@ -447,7 +447,7 @@ void save_tensor(FILE* fp, tensor* tensor)
     short is_done = tensor->is_done(tensor, iterator);
     while(!is_done)
     {
-        fprintf(fp, "%lf", tensor->get_value(tensor, iterator));
+        fprintf(fp, "%le", tensor->get_value(tensor, iterator));
         iterator = tensor->get_next(tensor, iterator);
         is_done = tensor->is_done(tensor, iterator);
         if(!is_done)
@@ -466,7 +466,7 @@ void read_tensor(FILE* fp, tensor* tensor)
     while(!is_done)
     {
         double d;
-        fscanf(fp, "%lf",&d);
+        fscanf(fp, "%le",&d);
         tensor->set_value(tensor, iterator, d);
         iterator = tensor->get_next(tensor, iterator);
         is_done = tensor->is_done(tensor, iterator);
