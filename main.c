@@ -112,7 +112,7 @@ void train_cnn()
     model->add_layer(build_layer_Flatten(), model);
     model->add_layer(build_layer_FC(64, build_activation(RELU)), model);
     model->add_layer(build_layer_FC(10, build_activation(SOFTMAX)), model);
-    model->compile(train->features_shape, build_optimizer(ADAM), build_loss(CCE), model);
+    model->compile(train->features_shape, build_optimizer_GD(1E-2, 1E-1), build_loss(CCE), model);
     save_model(model, filename);
     show_model(filename);
     training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 10, model);
@@ -131,5 +131,5 @@ void train_cnn()
 
 int main(){
     omp_set_num_threads(10);
-    retrain_model("save/mlp_model.txt", 60000, 128,10);
+    train_cnn();
 }

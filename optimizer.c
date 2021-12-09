@@ -15,6 +15,8 @@ typedef struct adam_parameters{
 
 typedef struct gd_parameters{
     double alpha;
+    double momentum;
+    double velocity;
 } gd_parameters;
 
 void clear_optimizer_adam(optimizer* optimizer)
@@ -50,7 +52,7 @@ optimizer* build_optimizer(optimizer_type type)
 {
     switch(type){
         case ADAM: return build_optimizer_Adam(1E-3,0.9,0.999,1E-7);
-        default: return build_optimizer_GD(1E-2);
+        default: return build_optimizer_GD(1E-2, 0);
     }
 }
 
@@ -69,8 +71,9 @@ void compile_default(shape_list* layers_shape_list, int n_layers, struct optimiz
 //Simple gradient descent calculation
 double apply_gradient_GD(double value, double gradient, int layer_index, int param_index, int* tensor_indexes, optimizer* optimizer)
 {
-    double alpha = ((gd_parameters*)optimizer->parameters)->alpha;
-    return value - (alpha * gradient);
+    gd_parameters* params = (gd_parameters*)optimizer->parameters;
+    params->velocity = params->velocity*params->momentum + params->alpha*gradient;
+    return value - params->velocity;
 }
 
 double apply_gradient_Adam(double value, double gradient, int layer_index, int param_index, int* tensor_indexes, optimizer* optimizer)
@@ -117,7 +120,7 @@ void save_parameters_adam(FILE *fp, optimizer* optimizer)
 void save_parameters_gd(FILE *fp, optimizer* optimizer)
 {
     gd_parameters* params = (gd_parameters*)optimizer->parameters;
-    fprintf(fp, "alpha:%lf\n", params->alpha);
+    fprintf(fp, "alpha:%le, momentum:%le, velocity:%le\n", params->alpha, params->momentum, params->velocity);
 }
 
 void read_parameters_adam(FILE *fp, optimizer* optimizer)
@@ -155,17 +158,19 @@ void read_parameters_adam(FILE *fp, optimizer* optimizer)
 void read_parameters_gd(FILE *fp, optimizer* optimizer)
 {
     gd_parameters* params = (gd_parameters*)optimizer->parameters;
-    fscanf(fp, "alpha:%lf\n", &params->alpha);
+    fscanf(fp, "alpha:%le, momentum:%le, velocity:%le\n", &params->alpha, &params->momentum, &params->velocity);;
 }
 
 //Build a simple gradient descent 
-optimizer* build_optimizer_GD(double alpha)
+optimizer* build_optimizer_GD(double alpha, double momentum)
 {
     //Memory allocation
     optimizer* result=(optimizer*) malloc(sizeof(optimizer));
     gd_parameters* params = malloc(sizeof(gd_parameters));
     //Store learning parameter
     params->alpha = alpha;
+    params->momentum = momentum;
+    params->velocity=0;
     result->parameters = params;
     //Set the gradient calculation function
     result->apply_gradient=apply_gradient_GD;
