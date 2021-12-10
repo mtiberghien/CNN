@@ -10,6 +10,5 @@ typedef struct progression{
 } progression;
 
 progression* build_progression(int total_steps, char* header);
-void clear_progression(progression*);
-
+void free_progression(progression*);
 #endif

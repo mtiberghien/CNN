@@ -2,6 +2,7 @@
 #include "include/tensor.h"
 #include <math.h>
 
+//Evaluate accuracy for categorical tensors
 double evaluate_accuracy(tensor* truth, tensor* prediction, int n_predictions)
 {
     double score=0;
@@ -19,6 +20,7 @@ double evaluate_accuracy(tensor* truth, tensor* prediction, int n_predictions)
     return 100*score/n_predictions;
 }
 
+//Evaluate accuracy of a model using dataset features and labels_categorical
 double evaluate_dataset_accuracy(dataset* data, model* model)
 {
     tensor* predictions = model->predict(data->features, data->n_entries, model);
@@ -27,11 +29,13 @@ double evaluate_dataset_accuracy(dataset* data, model* model)
     return result;
 }
 
+//Get the background color code for a gray scale providing a value from 0 to 1
 int get_background_color(double gray_scale)
 {
     return 232 + (int)(gray_scale*24);
 }
 
+//Draw grayscale image from a tensor that might be 1D,2D or 3D using printf
 void draw_image(tensor* img)
 {
     int width;

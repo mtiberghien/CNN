@@ -21,4 +21,11 @@ typedef struct activation{
 activation* build_activation(activation_type type);
 void save_activation(FILE* fp, activation* activation);
 activation* read_activation(FILE* fp);
+tensor* activation_forward(tensor* input, activation* activation);
+tensor* activation_backward_propagation(const tensor* activation_input, tensor* gradient, tensor* output, activation* activation);
+activation* build_activation_relu();
+activation* build_activation_sigmoid();
+activation* build_activation_softmax();
+activation* build_activation_tanh();
+activation* build_default_activation(activation_type type);
 #endif

@@ -50,12 +50,7 @@ void clear_layer_training_memory_no_activation(layer *layer)
 
 void clear_layer_predict_memory(layer* layer)
 {
-    #pragma omp parallel for
-    for (int i = 0; i < layer->batch_size; i++)
-    {
-        clear_tensor(&layer->outputs[i]);
-    }
-    free(layer->outputs);
+    free_tensors(layer->outputs, layer->batch_size);
 }
 
 void clear_layer(layer *layer)
@@ -69,10 +64,8 @@ void clear_layer(layer *layer)
     {
         free(layer->activation);
     }
-    clear_shape(layer->input_shape);
-    clear_shape(layer->output_shape);
-    free(layer->output_shape);
-    free(layer->input_shape);
+    free_shape(layer->input_shape);
+    free_shape(layer->output_shape);
 }
 
 void init_memory_training(layer* layer)
@@ -284,6 +277,5 @@ layer *read_layer(FILE *fp)
         layer->activation = read_activation(fp);
         return layer;
     }
-    clear_shape(input_shape);
-    free(input_shape);
+    free_shape(input_shape);
 }

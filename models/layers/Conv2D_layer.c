@@ -1,5 +1,5 @@
-#include "../include/layer.h"
-#include "../include/tensor.h"
+#include "../../include/layer.h"
+#include "../../include/tensor.h"
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
@@ -31,8 +31,7 @@ void build_shape_list_Conv2D(layer* layer, shape_list* shape_list)
 void clear_parameters_Conv2D(layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
-    clear_tensors(params->filters, params->n_output_channels);
-    free(params->filters);
+    free_tensors(params->filters, params->n_output_channels);
     clear_tensor(&params->biases);
     if(params->padding)
     {
@@ -417,8 +416,7 @@ void clear_layer_training_memory_Conv2D(layer *layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     clear_layer_training_memory(layer);
-    clear_tensors(params->filters_gradients, params->n_output_channels);
-    free(params->filters_gradients);
+    free_tensors(params->filters_gradients, params->n_output_channels);
     clear_tensor(&params->biases_gradients);
     if(params->padding)
     {
@@ -470,13 +468,11 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
         }
         free(iterator);
     }
-    clear_shape(filter_shape);
-    free(filter_shape);
+    free_shape(filter_shape);
     shape* biases_shape = build_shape(OneD);
     biases_shape->sizes[0]=params->n_output_channels;
     initialize_tensor(&params->biases, biases_shape);
-    clear_shape(biases_shape);
-    free(biases_shape);
+    free_shape(biases_shape);
     for (int i = 0; i < params->n_output_channels; i++)
     {
         params->biases.v[i] = (2 * limit * ((double)rand() * invert_rand_max)) - limit;

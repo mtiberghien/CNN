@@ -42,5 +42,8 @@ void save_shape(FILE* fp, shape* shape);
 shape* read_shape(FILE* fp);
 shape* clone_shape(const shape*);
 short is_iterator_equal(int* i1, int*i2, dimension dimension);
+void free_shape(shape*);
+void free_tensor(tensor* tensor);
+void free_tensors(tensor* tensors, int n_tensors);
 #endif
 

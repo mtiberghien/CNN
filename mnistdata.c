@@ -5,6 +5,9 @@
 #include "include/tensor.h"
 #include "include/progression.h"
 
+//Read the MNIST Image from a csv file. The data can be extracted from the training file or the testing file using a limit
+//The features tensor shape will be 3D and data is normalized dividing each data by 255
+//The labels are alsor categorized
 dataset* getMNISTData(int limit, short test)
 {
     FILE * fp;
@@ -71,7 +74,7 @@ dataset* getMNISTData(int limit, short test)
     fclose(fp);
     if (line)
         free(line);
-    clear_progression(progression);
+    free_progression(progression);
     printf("read %d lines from %s.\n", ln, filename);
     result->features = features;
     result->labels = labels;

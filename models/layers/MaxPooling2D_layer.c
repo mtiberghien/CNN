@@ -1,4 +1,4 @@
-#include "../include/layer.h"
+#include "../../include/layer.h"
 
 typedef struct maxpool2D_parameters{
     int pool_height;

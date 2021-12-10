@@ -62,28 +62,6 @@ tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, los
     return loss->gradients;
 }
 
-double loss_cce(double truth, double output)
-{
-    double result = -truth*log(output);
-    return result;
-}
-
-double loss_prime_cce(double truth, double output)
-{
-    double d = output == 0?1:output;
-    return -truth/output;
-}
-
-double loss_mse(double truth, double output)
-{
-    return pow(truth-output, (double)2);
-}
-
-double loss_prime_mse(double truth, double output)
-{
-    return 2*(output-truth);
-}
-
 void init_training_memory(int batch_size, shape* shape, loss* loss)
 {
     loss->batch_size=batch_size;
@@ -111,20 +89,6 @@ loss* create_default_loss(loss_type type)
     result->clear_training_memory=clear_training_memory;
 }
 
-loss* build_loss_cce()
-{
-    loss* result = create_default_loss(CCE);
-    result->loss = loss_cce;
-    result->loss_prime = loss_prime_cce;
-}
-
-loss* build_loss_mse()
-{
-    loss* result = create_default_loss(MSE);
-    result->loss = loss_mse;
-    result->loss_prime = loss_prime_mse;
-}
-
 loss* build_loss(loss_type type)
 {
     switch(type){
@@ -135,13 +99,14 @@ loss* build_loss(loss_type type)
 
 void save_loss(FILE* fp, loss* loss)
 {
-    fprintf(fp, "loss:%d\n", loss->type);
+    int type = loss?loss->type:-1;
+    fprintf(fp, "Loss:%d\n", type);
 }
 
 loss* read_loss(FILE* fp)
 {
     int type;
-    fscanf(fp, "loss:%d\n", &type);
+    fscanf(fp, "Loss:%d\n", &type);
     if(type>=0)
     {
         return build_loss(type);

@@ -8,7 +8,10 @@
 			"args": [
 				"-g",
 				"${workspaceFolder}/*.c",
-				"${workspaceFolder}/layers/*.c",
+				"${workspaceFolder}/models/layers/*.c",
+				"${workspaceFolder}/models/activations/*.c",
+				"${workspaceFolder}/models/losses/*.c",
+				"${workspaceFolder}/models/optimizers/*.c",
 				"-o",
 				"${workspaceFolder}/bin/${fileBasenameNoExtension}",
 				"-lm",

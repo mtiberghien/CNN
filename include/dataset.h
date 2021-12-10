@@ -13,4 +13,5 @@ typedef struct dataset{
 } dataset;
 
 void clear_dataset(dataset* dataset);
+void free_dataset(dataset* dataset);
 #endif

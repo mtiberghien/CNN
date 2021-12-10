@@ -7,6 +7,7 @@
 #include <string.h>
 #include "include/utils.h"
 
+//Add a layer to the model
 void add_layer(layer* layer, model* model)
 {
     if(model->n_layers==0)
@@ -20,6 +21,7 @@ void add_layer(layer* layer, model* model)
     model->layers[model->n_layers]=*layer;
     model->n_layers++;
 }
+//Remove a layer from the model using the provided index
 void remove_layer(int index, model* model)
 {
     if(index<model->n_layers && index>=0)
@@ -33,7 +35,7 @@ void remove_layer(int index, model* model)
         model->n_layers--;
     }
 }
-
+//Initialize the model memory required for predictions
 void init_model_predict_memory(int batch_size, model* model)
 {
     for(int i=0;i<model->n_layers;i++)
@@ -43,7 +45,7 @@ void init_model_predict_memory(int batch_size, model* model)
         layer->init_predict_memory(layer);
     }
 }
-
+//Clear the model memory required for predictions
 void clear_model_predict_memory(model* model)
 {
     for(int i=0;i<model->n_layers;i++)
@@ -51,12 +53,18 @@ void clear_model_predict_memory(model* model)
         model->layers[i].clear_predict_memory(&model->layers[i]);
     }
 }
-
+//Clear the memory of a trainin_result set
 void clear_result(training_result* result)
 {
     free(result->loss);
 }
-
+//Clear the memory of a trainin_result set. The training_result object is destroyed
+void free_result(training_result* result)
+{
+    clear_result(result);
+    free(result);
+}
+//Predict the outputs for a list of inputs
 tensor* predict(tensor* inputs, int inputs_size, model* model)
 {
     tensor* outputs = inputs;
@@ -66,10 +74,10 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     {
         outputs = model->layers[i].forward_propagation_predict_loop(outputs, inputs_size, &model->layers[i], progression);
     }
-    clear_progression(progression);
+    free_progression(progression);
     return outputs;
 }
-
+//Initialize the model memory required for training
 void init_model_training_memory(int batch_size, model* model)
 {
     for(int i=0;i<model->n_layers;i++)
@@ -79,18 +87,24 @@ void init_model_training_memory(int batch_size, model* model)
         layer->init_training_memory(layer);
     }
     layer last_layer = model->layers[model->n_layers-1];
-    model->loss->init_training_memory(batch_size, last_layer.output_shape, model->loss);
+    if(model->loss)
+    {
+        model->loss->init_training_memory(batch_size, last_layer.output_shape, model->loss);
+    }
 }
-
+//Clear the model memory required for training
 void clear_model_training_memory(model* model)
 {
     for(int i=0;i<model->n_layers;i++)
     {
         model->layers[i].clear_training_memory(&model->layers[i]);
     }
-    model->loss->clear_training_memory(model->loss);
+    if(model->loss)
+    {
+        model->loss->clear_training_memory(model->loss);
+    }
 }
-
+//Train the model using a list of input features and a list of truths, using random batchs and epochs
 training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, model* model)
 {
     //Random indices support
@@ -177,7 +191,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
     free(indices);
     return result;
 }
-
+//Compile the model, calculating the input and output for each layer
 void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
 {
     model->loss=loss;
@@ -189,19 +203,22 @@ void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
         input_shape = model->layers[i].output_shape;
         model->layers[i].build_shape_list(&model->layers[i],&layers_shape_list[i]);
     }
-    optimizer->compile(layers_shape_list, model->n_layers, optimizer);
+    if(optimizer)
+    {
+        optimizer->compile(layers_shape_list, model->n_layers, optimizer);
+    }
     for(int i=0;i<model->n_layers;i++)
     {
         clear_shape_list(&layers_shape_list[i]);
     }
     free(layers_shape_list);
 }
-
+//Write a separation line to the standard output in the summary context
 void write_summary_line()
 {
     printf("-----------------------------------------------------------\n");
 }
-
+//Print the shape to the standard output in the summary context
 void summary_shape_to_string(char* shape_string, shape* shape)
 {
     for(int i=0;i<shape->dimension;i++)
@@ -212,7 +229,7 @@ void summary_shape_to_string(char* shape_string, shape* shape)
     }
     strcat(shape_string, ")");
 }
-
+//Print the summary of a model to the standard output
 void model_summary(model* model)
 {
     write_summary_line();
@@ -236,7 +253,7 @@ void model_summary(model* model)
     write_summary_line();
     printf("Total trainable parameters:%d\n", total_parameters);
 }
-
+//Initiliazes the memory and methods for a model
 model* build_model()
 {
     model* result = (model*)malloc(sizeof(model));
@@ -247,9 +264,11 @@ model* build_model()
     result->fit=fit;
     result->compile = compile;
     result->summary = model_summary;
+    result->loss=NULL;
+    result->optimizer=NULL;
     return result;
 }
-
+//Free the memory of a model
 void clear_model(model* model)
 {
     for(int i=0;i<model->n_layers;i++)
@@ -258,12 +277,23 @@ void clear_model(model* model)
     }
     model->n_layers=0;
     free(model->layers);
-    model->optimizer->clear(model->optimizer);
-    free(model->optimizer);
-    free(model->loss);
+    if(model->optimizer)
+    {
+        model->optimizer->clear(model->optimizer);
+        free(model->optimizer);
+    }
+    if(model->loss)
+    {
+        free(model->loss);
+    }
+}
+//Free the memory of a model. The model is destroyed
+void free_model(model* model)
+{
+    clear_model(model);
     free(model);
 }
-
+//Write the training result to a file
 void save_training_result(training_result* result, char* filename)
 {
     FILE * fp;
@@ -278,7 +308,7 @@ void save_training_result(training_result* result, char* filename)
     }
     fclose(fp);
 }
-
+//Write a model to a file
 void save_model(model* model, char* filename)
 {
     FILE * fp;
@@ -291,14 +321,17 @@ void save_model(model* model, char* filename)
             fprintf(fp, "Layer %d\n", i+1);
             save_layer(fp, &model->layers[i]);
         }
-        fprintf(fp, "Optimizer\n");
-        save_optimizer(fp, model->optimizer);
-        fprintf(fp, "Loss\n");
+        int optimizer_type = model->optimizer? model->optimizer->type :-1;
+        fprintf(fp, "Optimizer:%d\n", optimizer_type);
+        if(model->optimizer)
+        {
+            save_optimizer(fp, model->optimizer);
+        }
         save_loss(fp, model->loss);
     }
     fclose(fp);
 }
-
+//Read a model from a file
 model* read_model(char* filename)
 {
     model* model = build_model();
@@ -318,10 +351,15 @@ model* read_model(char* filename)
                model->add_layer(layer, model);
            }
         }
-        fscanf(fp, "Optimizer\n");
-        model->optimizer = read_optimizer(fp);
-        fscanf(fp, "Loss\n");
+        int optimizer_type;
+        int loss_type;
+        fscanf(fp, "Optimizer:%d\n",&optimizer_type);
+        if(optimizer_type>=0)
+        {
+            model->optimizer = read_optimizer(fp);
+        }
         model->loss = read_loss(fp);
+        
     }
     return model;
     fclose(fp);

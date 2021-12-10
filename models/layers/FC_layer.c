@@ -1,5 +1,5 @@
-#include "../include/layer.h"
-#include "../include/tensor.h"
+#include "../../include/layer.h"
+#include "../../include/tensor.h"
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
@@ -41,8 +41,7 @@ void compile_layer_FC(shape* input_shape, layer *layer)
     initialize_tensor(&params->weights, weights_shape);
     double invert_rand_max = (double)1.0 / (double)RAND_MAX;
     double limit = sqrt((double)6 / (weights_shape->sizes[0] + weights_shape->sizes[1]));
-    clear_shape(weights_shape);
-    free(weights_shape);
+    free_shape(weights_shape);
     int* iterator = get_iterator(&params->weights);
     while(!params->weights.is_done(&params->weights, iterator))
     {

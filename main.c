@@ -8,6 +8,7 @@
 #include "time.h"
 #include "omp.h"
 
+//Test predictions on an existing model. The mis predicted images are displayed
 void test_model(char* filename)
 {
     int test_size=10;
@@ -18,7 +19,7 @@ void test_model(char* filename)
     {
         int label = (int)strtod(test->labels[i],NULL);
         int pred = arg_max(&predictions[i])[0];
-        printf("true label:%d, predicted: %d\n", label, pred);
+        printf("true label:%d, predicted: %d, confidence: %.2lf%%\n", label, pred, 100*predictions[i].v[pred]);
         if(label!=pred)
         {
             printf("full prediction: ");
@@ -29,19 +30,35 @@ void test_model(char* filename)
         
 
     }
-    clear_tensors(predictions, test->n_entries);
-    free(predictions);
-    clear_dataset(test);
-    clear_model(model);
+    free_tensors(predictions, test->n_entries);
+    free_dataset(test);
+    free_model(model);
 }
 
+//Train an existing model providing the filename, the number of entries to use, the batch size and the epochs
+void retrain_model(char* filename, int n_entries, int batch_size, int epochs)
+{
+    dataset* train = getMNISTData(n_entries, 0);
+    dataset* test = getMNISTData(1000, 1);
+    model* model = read_model(filename);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, batch_size, epochs, model);
+    free_result(result);
+    save_model(model, filename);
+    printf("accuracy test:%6.2f%%\n", evaluate_dataset_accuracy(test, model));
+    free_model(model);
+    free_dataset(train);
+    free_dataset(test);
+}
+
+//Display the summary of the model read from the provided filename
 void show_model(char* filename)
 {
     model* model = read_model(filename);
     model->summary(model);
-    clear_model(model);
+    free_model(model);
 }
 
+//Train MLP architecture using MNIST Data
 void train_mlp()
 {
     char* filename = "save/mlp_model.txt";
@@ -55,49 +72,19 @@ void train_mlp()
     model->summary(model);
     save_model(model, filename);
     training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 64, 5, model);
-    clear_result(result);
-    free(result);
+    free_result(result);
     save_model(model, filename);
     
     printf("accuracy training:%6.2f%%\n", evaluate_dataset_accuracy(train, model)); 
     printf("accuracy test:%6.2f%%\n", evaluate_dataset_accuracy(test, model));
     
-    clear_model(model);
-    clear_dataset(train);
-    clear_dataset(test);
+    free_model(model);
+    free_dataset(train);
+    free_dataset(test);
     test_model(filename); 
 }
 
-void test()
-{
-    char* filename = "save/cnn_model.txt";
-    dataset* test = getMNISTData(100, 1);
-    model* model = read_model(filename);
-    printf("Label:%s\n", test->labels[0]);
-    draw_image(test->features);
-    show_model(filename);
-    training_result* result = model->fit(test->features, test->labels_categorical, 1,1, 1, model);
-    clear_result(result);
-    free(result);   
-    clear_model(model);
-    clear_dataset(test);
-}
-
-void retrain_model(char* filename, int n_entries, int batch_size, int epochs)
-{
-    dataset* train = getMNISTData(n_entries, 0);
-    dataset* test = getMNISTData(1000, 1);
-    model* model = read_model(filename);
-    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, batch_size, epochs, model);
-    clear_result(result);
-    free(result);
-    save_model(model, filename);
-    printf("accuracy test:%6.2f%%\n", evaluate_dataset_accuracy(test, model));
-    clear_model(model);
-    clear_dataset(train);
-    clear_dataset(test);
-}
-
+//Train a CNN architecture using MNIST Data
 void train_cnn()
 {
     char* filename = "save/cnn_model.txt";
@@ -116,20 +103,20 @@ void train_cnn()
     save_model(model, filename);
     show_model(filename);
     training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 10, model);
-    clear_result(result);
-    free(result);
+    free_result(result);
     save_model(model, filename);
     
     printf("accuracy training:%6.2f%%\n", evaluate_dataset_accuracy(train, model)); 
     printf("accuracy test:%6.2f%%\n", evaluate_dataset_accuracy(test, model));
     
-    clear_model(model);
-    clear_dataset(train);
-    clear_dataset(test);
+    free_model(model);
+    free_dataset(train);
+    free_dataset(test);
     test_model(filename); 
 }
 
+//Main method for testings
 int main(){
     omp_set_num_threads(10);
-    train_cnn();
+    test_model("save/mlp_model.txt");
 }

@@ -22,4 +22,7 @@ typedef struct loss{
 loss* build_loss(loss_type type);
 void save_loss(FILE* fp, loss* loss);
 loss* read_loss(FILE* fp);
+loss* build_loss_cce();
+loss* build_loss_mse();
+loss* create_default_loss(loss_type type);
 #endif

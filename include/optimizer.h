@@ -33,4 +33,5 @@ optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, doub
 void save_optimizer(FILE* fp, optimizer* optimizer);
 optimizer* read_optimizer(FILE* fp);
 void clear_shape_list(shape_list*);
+void compile_default(shape_list* layers_shape_list, int n_layers, struct optimizer* optimizer);
 #endif
