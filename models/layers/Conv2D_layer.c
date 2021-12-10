@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <omp.h>
 
+//Conv 2D parameters structure
 typedef struct conv2D_parameters{
     short padding;
     int stride;
@@ -19,6 +20,7 @@ typedef struct conv2D_parameters{
     struct layer* padding_layer;
 } conv2D_parameters;
 
+//Build the list of shapes for each Conv 2D trainable parameters
 void build_shape_list_Conv2D(layer* layer, shape_list* shape_list)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -28,6 +30,7 @@ void build_shape_list_Conv2D(layer* layer, shape_list* shape_list)
     shape_list->shapes[1]=*clone_shape(params->filters->shape);
 }
 
+//Clear Conv 2D parameters memory
 void clear_parameters_Conv2D(layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -40,6 +43,7 @@ void clear_parameters_Conv2D(layer* layer)
     }
 }
 
+//Get the number of trainable parameters of a Conv 2D layer
 int get_trainable_parameters_count_Conv2D(layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -51,12 +55,14 @@ int get_trainable_parameters_count_Conv2D(layer* layer)
     return total;
 }
 
+//Write Conv 2D parameters to a file
 void save_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     fprintf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d, stride:%d, padding:%hd\n", params->n_output_channels, params->kernel_width, params->kernel_height, params->stride, params->padding);
 }
 
+//Write Conv 2D trainable parameters to a file
 void save_trainable_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -67,12 +73,14 @@ void save_trainable_parameters_Conv2D(FILE* fp, layer* layer)
     save_tensor(fp, &params->biases);
 }
 
+//Read Conv 2D parameters from file
 void read_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     fscanf(fp, "n_output_channels:%d, kernel_width:%d, kernel_height:%d, stride:%d, padding:%hd\n", &params->n_output_channels, &params->kernel_width, &params->kernel_height, &params->stride, &params->padding);
 }
 
+//Read Conv 2D trainable parameters from file
 void read_trainable_parameters_Conv2D(FILE* fp, layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -83,7 +91,7 @@ void read_trainable_parameters_Conv2D(FILE* fp, layer* layer)
     read_tensor(fp, &params->biases);
 }
 
-//Default forward propagation loop
+//Conv 2D forward propagation loop when training
 tensor *forward_propagation_training_loop_Conv2D(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -94,6 +102,7 @@ tensor *forward_propagation_training_loop_Conv2D(const tensor *inputs, int batch
     forward_propagation_training_loop(inputs, batch_size, layer, progression);
 }
 
+//Conv 2D layer forward propagation loop when predicting
 tensor *forward_propagation_predict_loop_Conv2D(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -235,6 +244,7 @@ tensor *forward_calculation_predict_Conv2D(const tensor *input, tensor *output, 
     return output;
 }
 
+//Backward propagation loop for Conv 2D layer
 tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer, struct layer *layer, int layer_index)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -332,7 +342,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
     return params->padding? params->padding_layer->backward_propagation_loop(layer->previous_gradients, optimizer, params->padding_layer, 0): layer->previous_gradients;
 }
 
-//Backward propagation function for Fully Connected layer (perceptron)
+//Backward propagation function for Conv 2D layer
 void backward_calculation_Conv2D(optimizer *optimizer, layer *layer, int layer_index)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -376,6 +386,7 @@ void backward_calculation_Conv2D(optimizer *optimizer, layer *layer, int layer_i
     }
 }
 
+//Initialize Conv 2D memory required by prediction
 void init_memory_predict_Conv2D(layer* layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -386,6 +397,7 @@ void init_memory_predict_Conv2D(layer* layer)
     }
 }
 
+//Clear Conv 2D memory required by prediction
 void clear_memory_predict_Conv2D(layer* layer)
 {
    conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -396,6 +408,7 @@ void clear_memory_predict_Conv2D(layer* layer)
    }
 }
 
+//Initialize Conv 2D memory required by training
 void init_memory_training_Conv2D(layer* layer)
 {
     init_memory_training(layer);
@@ -412,6 +425,7 @@ void init_memory_training_Conv2D(layer* layer)
     }
 }
 
+//Clear Conv 2D layer memory required by training
 void clear_layer_training_memory_Conv2D(layer *layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -424,7 +438,7 @@ void clear_layer_training_memory_Conv2D(layer *layer)
     }
 }
 
-
+//Compilke Conv 2D layer
 void compile_layer_Conv2D(shape* input_shape, layer *layer)
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
@@ -479,6 +493,7 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
     }
 }
 
+//Configure Conv 2D layer methods
 void configure_layer_Conv2D(layer* layer)
 {
     configure_default_layer(layer);
@@ -504,6 +519,7 @@ void configure_layer_Conv2D(layer* layer)
     layer->get_trainable_parameters_count = get_trainable_parameters_count_Conv2D;
 }
 
+//Build Conv 2d layer
 layer* build_layer_Conv2D(int output_channel_size, int kernel_width, int kernel_height, int stride, short padding, activation* activation)
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));

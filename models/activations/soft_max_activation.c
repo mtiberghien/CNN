@@ -1,6 +1,7 @@
 #include "../../include/activation.h"
 #include <math.h>
 
+//Forward calculation of SOFTMAX
 tensor* activation_forward_softmax(tensor* input, activation* activation)
 {
     double max_value = max(input);
@@ -19,6 +20,7 @@ tensor* activation_forward_softmax(tensor* input, activation* activation)
     return input;
 }
 
+//Backward propagation calculation for SOFTMAX
 tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gradient, tensor* output, activation* activation)
 {
     tensor gradient_product;
@@ -48,6 +50,7 @@ tensor* backward_propagation_softmax(const tensor* activation_input, tensor* gra
     return gradient;
 }
 
+//Build activation SOFTMAX
 activation* build_activation_softmax()
 {
     activation* result = build_default_activation(SOFTMAX);

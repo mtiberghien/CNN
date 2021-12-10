@@ -1,11 +1,13 @@
 #include "../../include/activation.h"
 #include <math.h>
 
+//tanh derivative
 double tanh_prime(double x)
 {
     return 1-pow(tanh(x),(double)2);
 }
 
+//Build activation tanh
 activation* build_activation_tanh()
 {
     activation* result = build_default_activation(TANH);

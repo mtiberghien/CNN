@@ -1,24 +1,27 @@
 #include "../../include/layer.h"
 
+//MaxPooling 2D parameters structure
 typedef struct maxpool2D_parameters{
     int pool_height;
     int pool_width;
     int stride;
 } maxpool2D_parameters;
 
+//Write MaxPooling 2D parameters to a file
 void save_parameters_MaxPooling2D(FILE* fp, layer* layer)
 {
     maxpool2D_parameters* params = (maxpool2D_parameters*)layer->parameters;
     fprintf(fp, "pool_width:%d, pool_height:%d, stride:%d\n", params->pool_width, params->pool_height, params->stride);
 }
 
+//Read MaxPooling 2D parameters from file
 void read_parameters_MaxPooling2D(FILE* fp, layer* layer)
 {
     maxpool2D_parameters* params = (maxpool2D_parameters*)layer->parameters;
     fscanf(fp, "pool_width:%d, pool_height:%d, stride:%d\n", &params->pool_width, &params->pool_height, &params->stride);
 }
 
-//Convolution calculation layer for training
+//MaxPooling 2D layer calculation when training
 tensor *forward_calculation_training_MaxPooling2D(const tensor *input, tensor *output, tensor* activation_input, layer *layer)
 {
     maxpool2D_parameters* params = (maxpool2D_parameters*)layer->parameters;
@@ -66,12 +69,13 @@ tensor *forward_calculation_training_MaxPooling2D(const tensor *input, tensor *o
     return output;
 }
 
-//Forward calculation function for Flatten layer when predicting
+//Forward calculation function for MaxPooling 2D layer when predicting
 tensor *forward_calculation_predict_MaxPooling2D(const tensor *input, tensor *output, layer *layer)
 {
     forward_calculation_training_MaxPooling2D(input, output, NULL, layer);
 }
 
+//Backward propagation loop for MaxPooling 2D
 tensor *backward_propagation_loop_MaxPooling2D(tensor *gradients, optimizer *optimizer, struct layer *layer, int layer_index)
 {
     maxpool2D_parameters* params = (maxpool2D_parameters*)layer->parameters;
@@ -133,11 +137,12 @@ tensor *backward_propagation_loop_MaxPooling2D(tensor *gradients, optimizer *opt
     return layer->previous_gradients;
 }
 
-//MaxPooling2D layer doesn't calculate anything and the function is not called  in backward loop
+//MaxPooling 2D layer doesn't calculate anything and the function is not called  in backward loop
 void backward_calculation_MaxPooling2D(optimizer *optimizer, layer *layer, int layer_index)
 {
 }
 
+//Compile MaxPooling 2D layer
 void compile_layer_MaxPooling2D(shape* input_shape, layer *layer)
 {
     maxpool2D_parameters* params = (maxpool2D_parameters*)layer->parameters;
@@ -153,6 +158,7 @@ void compile_layer_MaxPooling2D(shape* input_shape, layer *layer)
     layer->output_shape->sizes[2]=output_width;
 }
 
+//Configure MaxPooling 2D methods
 void configure_layer_MaxPooling2D(layer* layer)
 {
     configure_default_layer(layer);
@@ -170,6 +176,7 @@ void configure_layer_MaxPooling2D(layer* layer)
     layer->backward_calculation = backward_calculation_MaxPooling2D;
 }
 
+//Build MaxPooling 2D layer
 layer* build_layer_MaxPooling2D(int pool_height, int pool_width, int stride)
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+//ADAM parameters structure
 typedef struct adam_parameters{
     //learning rate
     double alpha;
@@ -14,6 +15,7 @@ typedef struct adam_parameters{
     int* indexes;
 } adam_parameters;
 
+//Clear memory of ADAM optimizer
 void clear_optimizer_adam(optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
@@ -23,6 +25,7 @@ void clear_optimizer_adam(optimizer* optimizer)
     free(params);
 }
 
+//ADAM optimization
 double apply_gradient_Adam(double value, double gradient, int layer_index, int param_index, int* tensor_indexes, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
@@ -39,7 +42,7 @@ double apply_gradient_Adam(double value, double gradient, int layer_index, int p
     v->set_value(v, tensor_indexes, v_value_next);
     return value - ((params->alpha * mhat)/(sqrt(vhat)+params->eps));
 }
-
+//Write ADAM parameters to file
 void save_parameters_adam(FILE *fp, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
@@ -63,7 +66,7 @@ void save_parameters_adam(FILE *fp, optimizer* optimizer)
         save_tensor(fp, &params->v[i]);
     }
 }
-
+//Read ADAM parameters from file
 void read_parameters_adam(FILE *fp, optimizer* optimizer)
 {
     adam_parameters* params = (adam_parameters*)optimizer->parameters;
@@ -95,7 +98,7 @@ void read_parameters_adam(FILE *fp, optimizer* optimizer)
         read_tensor(fp, &params->v[i]);
     }
 }
-
+//Compile ADAM optimizer 
 void compile_Adam(shape_list* layers_shape_list, int n_layers, struct optimizer* optimizer)
 {
     compile_default(layers_shape_list, n_layers, optimizer);
@@ -117,7 +120,7 @@ void compile_Adam(shape_list* layers_shape_list, int n_layers, struct optimizer*
         }
     }
 }
-
+//Build an ADAM optimizer
 optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps)
 {
     optimizer* result = (optimizer*) malloc(sizeof(optimizer));

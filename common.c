@@ -1,10 +1,10 @@
 #include <string.h>
-
+//Return minimum of two integers
 int min(int x,int y)
 {
     return  x<y?x:y;
 }
-
+//Return index of a word in in a list
 int index_of(char** list, int n_items, char* item)
 {
     for(int i=0;i<n_items;i++)
@@ -17,6 +17,7 @@ int index_of(char** list, int n_items, char* item)
     return -1;
 }
 
+//swap to words
 void swap(char** xp, char** yp)
 {
     char* temp = *xp;
@@ -24,7 +25,7 @@ void swap(char** xp, char** yp)
     *yp = temp;
 }
  
-// A function to implement bubble sort
+// Bubble sort implementation
 void sort(char** list, int n_items)
 {
    int i, j;

@@ -3,6 +3,7 @@
 #include "include/layer.h"
 #include "math.h"
 
+//Loss calculation iterating trough a batch, summing the mean error on each tensor
 double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, loss* loss)
 {
     double errors = 0;
@@ -32,7 +33,7 @@ double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, loss
     return errors/batch_size;
 }
 
-
+//Backpropagation iterating trough a batch
 tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, loss* loss)
 {
     int* size = loss->gradients[0].shape->sizes;
@@ -61,7 +62,7 @@ tensor* backward_error_loop(tensor* truths, tensor* outputs, int batch_size, los
     }
     return loss->gradients;
 }
-
+//Initialize memory required by training
 void init_training_memory(int batch_size, shape* shape, loss* loss)
 {
     loss->batch_size=batch_size;
@@ -71,12 +72,12 @@ void init_training_memory(int batch_size, shape* shape, loss* loss)
         initialize_tensor(&loss->gradients[i], shape);
     }
 }
-
+//Clear memory required by training
 void clear_training_memory(loss* loss)
 {
     clear_tensors(loss->gradients, loss->batch_size);
 }
-
+//Initialize memory and default methods for loss
 loss* create_default_loss(loss_type type)
 {
     loss* result = (loss*)malloc(sizeof(loss));
@@ -88,7 +89,7 @@ loss* create_default_loss(loss_type type)
     result->init_training_memory=init_training_memory;
     result->clear_training_memory=clear_training_memory;
 }
-
+//Build loss according to type
 loss* build_loss(loss_type type)
 {
     switch(type){
@@ -96,13 +97,14 @@ loss* build_loss(loss_type type)
         default: return build_loss_mse();
     }
 }
-
+//Write loss to a file
 void save_loss(FILE* fp, loss* loss)
 {
     int type = loss?loss->type:-1;
     fprintf(fp, "Loss:%d\n", type);
 }
 
+//Read loss from file
 loss* read_loss(FILE* fp)
 {
     int type;

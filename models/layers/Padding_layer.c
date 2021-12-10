@@ -1,24 +1,26 @@
 #include "../../include/layer.h"
 
+//Paddings 2D parameters structure
 typedef struct padding2D_parameters{
     int padding_height;
     int padding_width;
 } padding2D_parameters;
 
-
+//Write Padding 2D parameters to a file
 void save_parameters_Padding2D(FILE* fp, layer* layer)
 {
     padding2D_parameters* params = (padding2D_parameters*)layer->parameters;
     fprintf(fp, "padding_width:%d, padding_height:%d\n", params->padding_width, params->padding_height);
 }
 
+//Read Padding 2D parameters from file
 void read_parameters_Padding2D(FILE* fp, layer* layer)
 {
     padding2D_parameters* params = (padding2D_parameters*)layer->parameters;
     fscanf(fp, "padding_width:%d, padding_height:%d\n", &params->padding_width, &params->padding_height);
 }
 
-//Forward calculation function for Flatten layer when training
+//Forward calculation function for Padding 2D layer when training
 tensor *forward_calculation_training_Padding2D(const tensor *input, tensor *output, tensor* activation_input, layer *layer)
 {
     padding2D_parameters* params = (padding2D_parameters*)layer->parameters;
@@ -44,13 +46,13 @@ tensor *forward_calculation_training_Padding2D(const tensor *input, tensor *outp
     return output;
 }
 
-//Forward calculation function for Flatten layer when predicting
+//Forward calculation function for Padding 2D layer when predicting
 tensor *forward_calculation_predict_Padding2D(const tensor *input, tensor *output, layer *layer)
 {
     forward_calculation_training_Padding2D(input, output, NULL, layer);
 }
 
-//backward propagation loop for Flatten layer
+//backward propagation loop for Padding 2D layer
 tensor *backward_propagation_loop_Padding2D(tensor *gradients, optimizer *optimizer, struct layer *layer, int layer_index)
 {
     int output_size = layer->output_shape->sizes[0];
@@ -94,6 +96,7 @@ void backward_calculation_Padding2D(optimizer *optimizer, layer *layer, int laye
 {
 }
 
+//Compile Padding 2D layer
 void compile_layer_Padding2D(shape* input_shape, layer *layer)
 {
     //Should be 3D shape with channels, height, width
@@ -105,6 +108,7 @@ void compile_layer_Padding2D(shape* input_shape, layer *layer)
     layer->output_shape->sizes[2]= layer->input_shape->sizes[2]+params->padding_width;
 }
 
+// Configure methods for Padding 2D layer
 void configure_layer_Padding2D(layer* layer)
 {
     //Set used methods for the layer
@@ -122,6 +126,7 @@ void configure_layer_Padding2D(layer* layer)
     layer->save_parameters = save_parameters_Padding2D;
 }
 
+//Build Padding 2D layer
 layer* build_layer_Padding2D(int padding_height, int padding_width)
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));

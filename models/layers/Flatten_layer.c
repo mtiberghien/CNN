@@ -1,7 +1,7 @@
 #include "../../include/layer.h"
 
 
-
+//Compile Flatten layer
 void compile_layer_Flatten(shape* input_shape, layer *layer)
 {
     layer->input_shape = clone_shape(input_shape);
@@ -68,6 +68,7 @@ void backward_calculation_Flatten(optimizer *optimizer, layer *layer, int layer_
 {
 }
 
+//Configure Flatten layer methods
 void configure_layer_Flatten(layer* layer)
 {
     //Set used methods for the layer
@@ -83,6 +84,7 @@ void configure_layer_Flatten(layer* layer)
     layer->compile_layer=compile_layer_Flatten;
 }
 
+//Build Flatten layer
 layer* build_layer_Flatten()
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));

@@ -73,6 +73,10 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
     for(int i=0; i<model->n_layers;i++)
     {
         outputs = model->layers[i].forward_propagation_predict_loop(outputs, inputs_size, &model->layers[i], progression);
+        if(i>0)
+        {
+            model->layers[i-1].clear_predict_memory(&model->layers[i-1]);
+        }
     }
     free_progression(progression);
     return outputs;
@@ -183,8 +187,8 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             time(&step);
             printf("\033[K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",episode++,n_episodes, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
             fflush(stdout);
+            model->optimizer->t++;
         }
-        model->optimizer->t++;
         printf("\n");
     }
     clear_model_training_memory(model);

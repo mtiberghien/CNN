@@ -38,6 +38,7 @@ typedef struct layer{
     void (*build_shape_list)(struct layer* layer, shape_list* shape_list);
     char* (*to_string)(struct layer* layer);
     int (*get_trainable_parameters_count)(struct layer* layer);
+    tensor* (*predict)(tensor* intputs, int n_inputs, struct layer* layer);
     //Stores the forward propagation loop
     tensor* (*forward_propagation_training_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);
     tensor* (*forward_propagation_predict_loop)(const tensor* inputs, int batch_size, struct layer* layer, progression* progression);

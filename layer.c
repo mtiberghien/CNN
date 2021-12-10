@@ -18,7 +18,7 @@ void clear_layer_parameters(layer* layer)
 {
 }
 
-//Clear memory of temporary stored inputs and outputs
+//Clear memory required by training
 void clear_layer_training_memory(layer *layer)
 {
     #pragma omp parallel for
@@ -34,7 +34,7 @@ void clear_layer_training_memory(layer *layer)
     free(layer->outputs);
 }
 
-//Clear training memory when no activation
+//Clear memory required for training for layer with no activation
 void clear_layer_training_memory_no_activation(layer *layer)
 {
     #pragma omp parallel for
@@ -47,12 +47,12 @@ void clear_layer_training_memory_no_activation(layer *layer)
     free(layer->outputs);
     free(layer->layer_inputs);
 }
-
+//Clear layer memory required for prediction
 void clear_layer_predict_memory(layer* layer)
 {
     free_tensors(layer->outputs, layer->batch_size);
 }
-
+//Clear layer memory
 void clear_layer(layer *layer)
 {
     if(layer->parameters)
@@ -67,7 +67,7 @@ void clear_layer(layer *layer)
     free_shape(layer->input_shape);
     free_shape(layer->output_shape);
 }
-
+//Initialize memory required for training
 void init_memory_training(layer* layer)
 {
     shape* input_shape = layer->input_shape;
@@ -85,7 +85,7 @@ void init_memory_training(layer* layer)
         initialize_tensor(&layer->previous_gradients[i], input_shape);
     }
 }
-
+//Initialize memory required for prediction
 void init_memory_predict(layer* layer)
 {
     int batch_size = layer->batch_size;
@@ -97,7 +97,7 @@ void init_memory_predict(layer* layer)
         initialize_tensor(&layer->outputs[i], output_shape);
     }
 }
-
+//Initialize memory required by training for layer without activation
 void init_memory_training_no_activation(layer* layer)
 {
     shape* input_shape = layer->input_shape;
@@ -132,7 +132,7 @@ tensor *forward_propagation_training_loop_no_activation(const tensor *inputs, in
     return layer->outputs;
 }
 
-//Default forward propagation loop
+//Default forward propagation loop when training
 tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     // Loop into input batch
@@ -149,7 +149,7 @@ tensor *forward_propagation_training_loop(const tensor *inputs, int batch_size, 
     }
     return layer->outputs;
 }
-
+//Default forward propagation loop when predicting input batch
 tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, struct layer *layer, progression* progression)
 {
     // Loop into input batch
@@ -166,6 +166,16 @@ tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, s
         }
     }
     return layer->outputs;
+}
+//Predict the output according to an input array
+tensor* layer_predict(tensor* inputs, int n_inputs, layer* layer)
+{
+    progression* progression = build_progression(n_inputs, "predicting");
+    layer->batch_size=n_inputs;
+    layer->init_predict_memory(layer);
+    tensor* outputs = layer->forward_propagation_predict_loop(inputs, n_inputs, layer, progression);
+    free_progression(progression);
+    return outputs;
 }
 
 //Default save_parameters (do nothing)
@@ -229,6 +239,7 @@ void configure_default_layer(layer* layer)
     layer->save_trainable_parameters = save_trainable_parameters;
     layer->get_trainable_parameters_count = get_layer_trainable_parameters_count;
     layer->to_string= to_string;
+    layer->predict = layer_predict;
 }
 
 layer* build_layer(layer_type type, shape* output_shape)

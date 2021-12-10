@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <omp.h>
 
+//FC layer parameters structure
 typedef struct fc_parameters{
     //Stores the weight matrix as an array of tensor
     tensor weights;
@@ -15,7 +16,7 @@ typedef struct fc_parameters{
     tensor biases_gradients;
 }fc_parameters;
 
-//Clear memory of temporary stored inputs and outputs
+//Clear FC layer memory required for training
 void clear_layer_training_memory_FC(layer *layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -24,6 +25,7 @@ void clear_layer_training_memory_FC(layer *layer)
     clear_tensor(&params->biases_gradients);
 }
 
+//Clear memory of FC layer parameters
 void clear_parameters_FC(layer* layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -31,6 +33,7 @@ void clear_parameters_FC(layer* layer)
     clear_tensor(&params->biases);
 }
 
+//Compile FC layer
 void compile_layer_FC(shape* input_shape, layer *layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -57,6 +60,7 @@ void compile_layer_FC(shape* input_shape, layer *layer)
     }
 }
 
+//Init FC layer memory required for training
 void init_memory_training_FC(layer* layer)
 {
     init_memory_training(layer);
@@ -65,6 +69,7 @@ void init_memory_training_FC(layer* layer)
     initialize_tensor(&params->biases_gradients, layer->output_shape);
 }
 
+//Build the shape list for trainable parameters
 void build_shape_list_FC(layer* layer, shape_list* shape_list)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -74,6 +79,7 @@ void build_shape_list_FC(layer* layer, shape_list* shape_list)
     shape_list->shapes[1]=*clone_shape(layer->output_shape);
 }
 
+//Forward calculation for FC layer when training
 tensor *forward_calculation_training_FC(const tensor *input, tensor *output, tensor* activation_input, layer *layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -200,6 +206,7 @@ void backward_calculation_FC(optimizer *optimizer, layer *layer, int layer_index
     }
 }
 
+//Write trainable parameters of a FC layer to a file
 void save_trainable_parameters_FC(FILE* fp, layer* layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -207,6 +214,7 @@ void save_trainable_parameters_FC(FILE* fp, layer* layer)
     save_tensor(fp, &params->biases);
 }
 
+//Read trainable parameters of a FC layer from file
 void read_trainable_parameters_FC(FILE* fp, layer* layer)
 {
     fc_parameters* params = (fc_parameters*)layer->parameters;
@@ -214,6 +222,7 @@ void read_trainable_parameters_FC(FILE* fp, layer* layer)
     read_tensor(fp, &params->biases);
 }
 
+//Return the total number of trainable parameters for a FC layer
 int get_trainable_parameters_count_FC(layer* layer)
 {
     int total = layer->output_shape->sizes[0];
@@ -221,6 +230,7 @@ int get_trainable_parameters_count_FC(layer* layer)
     return total;
 }
 
+// Configure FC layer methods
 void configure_layer_FC(layer* layer)
 {
     //Set used methods for the layer
@@ -241,6 +251,7 @@ void configure_layer_FC(layer* layer)
     layer->get_trainable_parameters_count = get_trainable_parameters_count_FC;
 }
 
+//Build a Fully Connected layer
 layer* build_layer_FC(int output_size, activation* activation)
 {
     layer *layer = (struct layer *)malloc(sizeof(struct layer));

@@ -25,7 +25,7 @@ double evaluate_dataset_accuracy(dataset* data, model* model)
 {
     tensor* predictions = model->predict(data->features, data->n_entries, model);
     double result = evaluate_accuracy(data->labels_categorical, predictions, data->n_entries);
-    clear_model_predict_memory(model);
+    free_tensors(predictions, data->n_entries);
     return result;
 }
 

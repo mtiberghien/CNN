@@ -1,12 +1,13 @@
 #include "../../include/optimizer.h"
 #include <stdlib.h>
-
+//GD parameters structure
 typedef struct gd_parameters{
     double alpha;
     double momentum;
     double velocity;
 } gd_parameters;
 
+//Clear GD memory
 void clear_optimizer_gd(optimizer* optimizer)
 {
     gd_parameters* params = (gd_parameters*)optimizer->parameters;
@@ -20,13 +21,14 @@ double apply_gradient_GD(double value, double gradient, int layer_index, int par
     params->velocity = params->velocity*params->momentum + params->alpha*gradient;
     return value - params->velocity;
 }
-
+//Write GD optimizer parameters to file
 void save_parameters_gd(FILE *fp, optimizer* optimizer)
 {
     gd_parameters* params = (gd_parameters*)optimizer->parameters;
     fprintf(fp, "alpha:%le, momentum:%le, velocity:%le\n", params->alpha, params->momentum, params->velocity);
 }
 
+// Read GD optimizer paramaters from file
 void read_parameters_gd(FILE *fp, optimizer* optimizer)
 {
     gd_parameters* params = (gd_parameters*)optimizer->parameters;
@@ -44,7 +46,7 @@ optimizer* build_optimizer_GD(double alpha, double momentum)
     params->momentum = momentum;
     params->velocity=0;
     result->parameters = params;
-    //Set the gradient calculation function
+    //Set the gradient calculation functions
     result->apply_gradient=apply_gradient_GD;
     result->type = GD;
     result->compile = compile_default;
