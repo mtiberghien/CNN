@@ -220,7 +220,7 @@ void compile(shape* input_shape, optimizer* optimizer, loss* loss, model* model)
 //Write a separation line to the standard output in the summary context
 void write_summary_line()
 {
-    printf("-----------------------------------------------------------\n");
+    printf("---------------------------------------------------------------------\n");
 }
 //Print the shape to the standard output in the summary context
 void summary_shape_to_string(char* shape_string, shape* shape)
@@ -237,22 +237,22 @@ void summary_shape_to_string(char* shape_string, shape* shape)
 void model_summary(model* model)
 {
     write_summary_line();
-    printf("%-20s%-20s%-20s\n","Id","Shape","Parameters");
+    printf("%-30s%-20s%-20s\n","Id","Shape","Parameters");
     int total_parameters = 0;
     write_summary_line();
     for(int i=0;i<model->n_layers;i++)
     {
         
         layer* layer = &model->layers[i];
-        char layer_name[20];
+        char layer_name[30];
         int params_count = layer->get_trainable_parameters_count(layer);
         total_parameters+=params_count;
         char params[20];
         char shape_string[20]="(None";
         summary_shape_to_string(shape_string,layer->output_shape);
         sprintf(params, "%d",params_count);
-        sprintf(layer_name, "%s_%d", layer->to_string(layer), i+1);
-        printf("%-20s%-20s%-20s\n", layer_name,shape_string, params);
+        sprintf(layer_name, "%s_%3d", layer->to_string(layer), i+1);
+        printf("%-30s%-20s%-20s\n", layer_name,shape_string, params);
     }
     write_summary_line();
     printf("Total trainable parameters:%d\n", total_parameters);

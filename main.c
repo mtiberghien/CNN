@@ -21,7 +21,7 @@ void test_model(char* filename, int n_tests)
         int pred = arg_max(&predictions[i])[0];
         double confidence = 100*predictions[i].v[pred];
         printf("true label:%d, predicted: %d, confidence: %.2lf%%\n", label, pred, confidence);
-        if(label!=pred || confidence<95)
+        if(label!=pred)
         {
             printf("full prediction: ");
             print_tensor(&predictions[i]);
@@ -112,8 +112,8 @@ void test_convolutions()
 //Train a CNN architecture using MNIST Data
 void train_cnn()
 {
-    char* filename = "save/cnn_model.txt";
-    dataset* train = getMNISTData(10000, 0);
+    char* filename = "save/cnn_model_gd.txt";
+    dataset* train = getMNISTData(60000, 0);
     model* model = build_model();
     model->add_layer(build_layer_Conv2D(32, 3,3, 1, 0, build_activation(RELU)), model);
     model->add_layer(build_layer_MaxPooling2D(2,2,2), model);
@@ -123,7 +123,7 @@ void train_cnn()
     model->add_layer(build_layer_Flatten(), model);
     model->add_layer(build_layer_FC(64, build_activation(RELU)), model);
     model->add_layer(build_layer_FC(10, build_activation(SOFTMAX)), model);
-    model->compile(train->features_shape, build_optimizer(ADAM), build_loss(CCE), model);
+    model->compile(train->features_shape, build_optimizer_GD(1E-2,1E-1), build_loss(CCE), model);
     save_model(model, filename);
     show_model(filename);
     training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 10, model);
@@ -141,7 +141,7 @@ void train_cnn()
 //Main method for testings
 int main(){
     omp_set_num_threads(10);
-    model* model = read_model("save/cnn_model.txt");
+    model * model = read_model("save/cnn_model_gd.txt");
     evaluate_model(model, 10000);
     free_model(model);
 }
