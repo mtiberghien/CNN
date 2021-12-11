@@ -249,6 +249,7 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
 {
     conv2D_parameters* params = (conv2D_parameters*)layer->parameters;
     int output_width = layer->output_shape->sizes[2];
+    int output_max_index = output_width-1;
     int output_height = layer->output_shape->sizes[1];
     int output_channels = layer->output_shape->sizes[0];
     int input_channels = layer->input_shape->sizes[0];
@@ -300,17 +301,18 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                         {
                             int i_gradient_y = i_y-start_y;
                             double* array_in = matrix_in[i_y];
-                            double* array_gradient_previous= matrix_gradient_previous[i_y];
                             double* array_gradient = matrix_gradient[i_gradient_y];
                             for(int i_x=start_x;i_x<end_x;i_x++)
                             {
                                 int i_gradient_x = i_x-start_x;
+                                double* array_gradient_previous= matrix_gradient_previous[i_x];
                                 double gradient_y_x = array_gradient[i_gradient_x];
                                 //Sum the product of each input channel with associated output gradient into the filter_gradient
                                 array_filter_gradient[j]+=gradient_y_x*array_in[i_x];
                                 if(layer_index>0)
                                 {
-                                    array_gradient_previous[i_x]+=gradient_y_x*filter_ij;
+                                    int i_gradient_x_rotation = output_max_index-i_gradient_x;
+                                    array_gradient_previous[i_y]+=array_gradient[i_gradient_x_rotation]*filter_ij;
                                 }                               
                             }
                         }
@@ -468,6 +470,7 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
     int fan_in = input_shape->sizes[0]*input_shape->sizes[1]*input_shape->sizes[2];
     // glorot uniform init: https://github.com/ElefHead/numpy-cnn/blob/master/utilities/initializers.py
     double limit = sqrt((double)6 /(fan_in + (params->kernel_width*params->kernel_height*params->n_output_channels)));
+    double double_limit = 2*limit;
     params->filters=malloc(sizeof(tensor)*params->n_output_channels);
     for(int i=0;i<params->n_output_channels;i++)
     {
@@ -476,7 +479,7 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
         int* iterator = get_iterator(filter);
         while(!filter->is_done(filter, iterator))
         {
-            double v = (2 * limit * ((double)rand() * invert_rand_max)) - limit;
+            double v = (double_limit * ((double)rand() * invert_rand_max)) - limit;
             filter->set_value(filter, iterator, v);
             iterator = filter->get_next(filter, iterator);
         }
@@ -489,7 +492,7 @@ void compile_layer_Conv2D(shape* input_shape, layer *layer)
     free_shape(biases_shape);
     for (int i = 0; i < params->n_output_channels; i++)
     {
-        params->biases.v[i] = (2 * limit * ((double)rand() * invert_rand_max)) - limit;
+        params->biases.v[i] = (double_limit * ((double)rand() * invert_rand_max)) - limit;
     }
 }
 

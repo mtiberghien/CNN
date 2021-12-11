@@ -24,14 +24,16 @@ typedef struct optimizer{
     void (*clear)(struct optimizer* optimizer);
     void (*save_params)(FILE*, struct optimizer*);
     void (*read_params)(FILE*, struct optimizer*);
+    void (*increment_t)(struct optimizer*);
 } optimizer;
 
 optimizer* build_optimizer(optimizer_type type);
 optimizer* build_optimizer_GD(double alpha, double momentum);
 optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps);
-
+optimizer* build_default_optimizer();
 void save_optimizer(FILE* fp, optimizer* optimizer);
 optimizer* read_optimizer(FILE* fp);
 void clear_shape_list(shape_list*);
 void compile_default(shape_list* layers_shape_list, int n_layers, struct optimizer* optimizer);
+void optimizer_increment_t(optimizer* optimizer);
 #endif

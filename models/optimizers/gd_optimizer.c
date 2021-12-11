@@ -39,7 +39,7 @@ void read_parameters_gd(FILE *fp, optimizer* optimizer)
 optimizer* build_optimizer_GD(double alpha, double momentum)
 {
     //Memory allocation
-    optimizer* result=(optimizer*) malloc(sizeof(optimizer));
+    optimizer* result=build_default_optimizer();
     gd_parameters* params = malloc(sizeof(gd_parameters));
     //Store learning parameter
     params->alpha = alpha;
@@ -49,7 +49,6 @@ optimizer* build_optimizer_GD(double alpha, double momentum)
     //Set the gradient calculation functions
     result->apply_gradient=apply_gradient_GD;
     result->type = GD;
-    result->compile = compile_default;
     result->clear = clear_optimizer_gd;
     result->save_params=save_parameters_gd;
     result->read_params=read_parameters_gd;

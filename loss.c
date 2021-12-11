@@ -7,8 +7,8 @@
 double forward_error_loop(tensor* truths, tensor* outputs,  int batch_size, loss* loss)
 {
     double errors = 0;
-    int* size = loss->gradients[0].shape->sizes;
-    int dim = loss->gradients[0].shape->dimension;
+    int* size = loss->gradients->shape->sizes;
+    int dim = loss->gradients->shape->dimension;
     double tot_size =1;
     for(int i=0;i<dim;i++)
     {

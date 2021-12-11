@@ -187,7 +187,7 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             time(&step);
             printf("\033[K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",episode++,n_episodes, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
             fflush(stdout);
-            model->optimizer->t++;
+            model->optimizer->increment_t(model->optimizer);
         }
         printf("\n");
     }

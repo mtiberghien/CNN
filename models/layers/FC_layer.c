@@ -44,11 +44,12 @@ void compile_layer_FC(shape* input_shape, layer *layer)
     initialize_tensor(&params->weights, weights_shape);
     double invert_rand_max = (double)1.0 / (double)RAND_MAX;
     double limit = sqrt((double)6 / (weights_shape->sizes[0] + weights_shape->sizes[1]));
+    double double_limit = 2*limit;
     free_shape(weights_shape);
     int* iterator = get_iterator(&params->weights);
     while(!params->weights.is_done(&params->weights, iterator))
     {
-        params->weights.set_value(&params->weights, iterator, (2 * limit * ((double)rand() * invert_rand_max)) - limit);
+        params->weights.set_value(&params->weights, iterator, (double_limit * ((double)rand() * invert_rand_max)) - limit);
         iterator = params->weights.get_next(&params->weights, iterator);
     }
     free(iterator);
@@ -56,7 +57,7 @@ void compile_layer_FC(shape* input_shape, layer *layer)
     initialize_tensor(&params->biases, layer->output_shape);
     for (int i = 0; i < layer->output_shape->sizes[0]; i++)
     {
-        params->biases.v[i] = (2 * limit * ((double)rand() * invert_rand_max)) - limit;
+        params->biases.v[i] = (double_limit * ((double)rand() * invert_rand_max)) - limit;
     }
 }
 

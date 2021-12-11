@@ -11,8 +11,8 @@ double loss_cce(double truth, double output)
 //CCE derivative
 double loss_prime_cce(double truth, double output)
 {
-    double d = output == 0?1:output;
-    return -truth/output;
+    double d = output == 0?1E-7:output;
+    return -truth/d;
 }
 
 //Build categorical cross entropy loss

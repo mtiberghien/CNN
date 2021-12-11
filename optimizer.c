@@ -14,6 +14,16 @@ void clear_shape_list(shape_list* shape_list)
         free(shape_list->shapes);
     }
 }
+
+optimizer* build_default_optimizer()
+{
+    optimizer* result = (optimizer*) malloc(sizeof(optimizer));
+    result->t=0;
+    result->compile = compile_default;
+    result->increment_t= optimizer_increment_t;
+    return result;
+}
+
 //Build an optimizer according to the provided type with default parameters
 optimizer* build_optimizer(optimizer_type type)
 {
@@ -33,6 +43,11 @@ void compile_default(shape_list* layers_shape_list, int n_layers, struct optimiz
     }
     optimizer->n_parameters = total_params;
     optimizer->n_layers=n_layers;
+}
+
+void optimizer_increment_t(optimizer* optimizer)
+{
+    optimizer->t++;
 }
 
 //Save an optimizer to a file
