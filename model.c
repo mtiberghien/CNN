@@ -45,14 +45,7 @@ void init_model_predict_memory(int batch_size, model* model)
         layer->init_predict_memory(layer);
     }
 }
-//Clear the model memory required for predictions
-void clear_model_predict_memory(model* model)
-{
-    for(int i=0;i<model->n_layers;i++)
-    {
-        model->layers[i].clear_predict_memory(&model->layers[i]);
-    }
-}
+
 //Clear the memory of a trainin_result set
 void clear_result(training_result* result)
 {
@@ -78,6 +71,7 @@ tensor* predict(tensor* inputs, int inputs_size, model* model)
             model->layers[i-1].clear_predict_memory(&model->layers[i-1]);
         }
     }
+    progression->done(progression);
     free_progression(progression);
     return outputs;
 }
@@ -185,7 +179,19 @@ training_result* fit(tensor* inputs, tensor* truths, int inputs_size, int batch_
             double last_mean_error=last_error_sum/(result_indice - start_indice +1);
             result_indice++;
             time(&step);
-            printf("\033[K\r%d/%d: %.2f%% - %.0fs - loss: %.4f",episode++,n_episodes, ((double)100*trained)/inputs_size, difftime(step,start), last_mean_error);
+            double percent_done = ((double)100*trained)/inputs_size;
+            short is_eta = percent_done<100;
+            long elapsed_seconds = (long)difftime(step,start);
+            long remaining_seconds = ((100-percent_done)*elapsed_seconds)/percent_done;
+            char time[15];
+            seconds_to_string(time, is_eta? remaining_seconds:elapsed_seconds);
+            char display_time[20]="";
+            if(is_eta)
+            {
+                strcat(display_time,"ETA:");
+            }
+            strcat(display_time, time);
+            printf("\033[K\r%d/%d: %.2f%% - %s - loss: %.4f",episode++,n_episodes, percent_done, display_time, last_mean_error);
             fflush(stdout);
             model->optimizer->increment_t(model->optimizer);
         }

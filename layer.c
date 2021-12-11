@@ -162,7 +162,7 @@ tensor *forward_propagation_predict_loop(const tensor *inputs, int batch_size, s
         layer->forward_calculation_predict(&inputs[i], output, layer);
         if(progression)
         {
-            progression->call_back(progression);
+            progression->next_step(progression);
         }
     }
     return layer->outputs;
@@ -174,6 +174,7 @@ tensor* layer_predict(tensor* inputs, int n_inputs, layer* layer)
     layer->batch_size=n_inputs;
     layer->init_predict_memory(layer);
     tensor* outputs = layer->forward_propagation_predict_loop(inputs, n_inputs, layer, progression);
+    progression->done(progression);
     free_progression(progression);
     return outputs;
 }

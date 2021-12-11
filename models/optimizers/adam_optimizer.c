@@ -153,9 +153,9 @@ optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, doub
     params->one_minus_beta_1 = 1-beta_1;
     params->one_minus_beta_2 = 1-beta_2;
     params->eps = eps;
-    update_factors(result);
     result->type = ADAM;
     result->parameters = params;
+    update_factors(result);
     result->compile = compile_Adam;
     result->apply_gradient= apply_gradient_Adam;
     result->clear=clear_optimizer_adam;

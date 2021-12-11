@@ -15,8 +15,8 @@ typedef struct training_result{
 
 typedef struct model{
     int n_layers;
-    layer* layers;
-    void (*add_layer)(layer* layer, struct model*);
+    struct layer* layers;
+    void (*add_layer)(struct layer* layer, struct model*);
     void (*remove_layer)(int index, struct model*);
     tensor* (*predict)(tensor* inputs, int inputs_size, struct model*);
     training_result* (*fit)(tensor* inputs, tensor* truths, int inputs_size, int batch_size, int epochs, struct model*);
@@ -26,13 +26,11 @@ typedef struct model{
     loss* loss;
 } model;
 
-
 model* build_model();
 void clear_model(model* model);
 void save_training_result(training_result* result, char* filename);
 void save_model(model* model, char* filename);
 model* read_model(char* filename);
-void clear_model_predict_memory(model* model);
 void clear_result(training_result* result);
 void free_model(model* model);
 void free_result(training_result* result);

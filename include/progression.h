@@ -5,7 +5,7 @@ typedef struct progression{
     int step;
     int total_steps;
     char* header;
-    void (*call_back)(struct progression*);
+    void (*next_step)(struct progression*);
     void (*done)(struct progression*);
 } progression;
 

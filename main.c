@@ -110,10 +110,10 @@ void test_convolutions()
 }
 
 //Train a CNN architecture using MNIST Data
-void train_cnn()
+void train_cnn(int n_entries, int batch_size, int epochs)
 {
     char* filename = "save/cnn_model_gd.txt";
-    dataset* train = getMNISTData(60000, 0);
+    dataset* train = getMNISTData(n_entries, 0);
     model* model = build_model();
     model->add_layer(build_layer_Conv2D(32, 3,3, 1, 0, build_activation(RELU)), model);
     model->add_layer(build_layer_MaxPooling2D(2,2,2), model);
@@ -126,7 +126,7 @@ void train_cnn()
     model->compile(train->features_shape, build_optimizer_GD(1E-2,1E-1), build_loss(CCE), model);
     save_model(model, filename);
     show_model(filename);
-    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, 128, 10, model);
+    training_result* result = model->fit(train->features, train->labels_categorical, train->n_entries, batch_size, epochs, model);
     free_result(result);
     save_model(model, filename);
     
@@ -139,9 +139,8 @@ void train_cnn()
 }
 
 //Main method for testings
-int main(){
+int main()
+{
     omp_set_num_threads(10);
-    model * model = read_model("save/cnn_model_gd.txt");
-    evaluate_model(model, 10000);
-    free_model(model);
+    retrain_model("save/cnn_model_gd.txt", 60000, 128, 1);
 }

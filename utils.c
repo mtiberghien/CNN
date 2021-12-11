@@ -1,6 +1,7 @@
 #include "include/utils.h"
 #include "include/tensor.h"
 #include <math.h>
+#include <string.h>
 
 //Evaluate accuracy for categorical tensors
 double evaluate_accuracy(tensor* truth, tensor* prediction, int n_predictions)
@@ -56,5 +57,57 @@ void draw_image(tensor* img)
             printf("\033[0m\n");
         }
         iterator = img->get_next(img,iterator);
+    }
+}
+
+void to_seconds_string(char* string, long seconds)
+{
+    sprintf(string, "%lds", seconds);
+}
+
+void to_minutes_string(char* string, long seconds)
+{
+    long minutes = seconds/60;
+    long remaining_seconds = seconds%60;
+    char secs[4];
+    to_seconds_string(secs, remaining_seconds);
+    sprintf(string, "%ldm%s", minutes, secs);   
+}
+
+void to_hours_string(char* string, long seconds)
+{
+    long hours= seconds/3600;
+    long remaining_seconds = seconds%3600;
+    char mins[7];
+    to_minutes_string(mins, remaining_seconds);
+    sprintf(string, "%ldh%s", hours, mins);
+}
+
+void to_days_string(char* string, long seconds)
+{
+    long days = seconds/86400;
+    long remaining_seconds = seconds%86400;
+    char hours[10];
+    to_hours_string(hours, remaining_seconds);
+    sprintf(string, "%ldd%s", days, hours);
+}
+
+void seconds_to_string(char* string, long seconds)
+{
+    if(seconds<60)
+    {
+        to_seconds_string(string, seconds);
+    }
+    else if(seconds<3600)
+    {
+        to_minutes_string(string, seconds);
+    }
+    else if(seconds<86400)
+    {
+        to_hours_string(string, seconds);
+    }
+    else
+    {
+        to_days_string(string, seconds);
     }
 }

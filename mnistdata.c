@@ -64,7 +64,7 @@ dataset* getMNISTData(int limit, short test)
             }
             free(iterator);
             ln++;
-            progression->call_back(progression);
+            progression->next_step(progression);
             if(limit==ln)
             {
                 break;
@@ -74,6 +74,7 @@ dataset* getMNISTData(int limit, short test)
     fclose(fp);
     if (line)
         free(line);
+    progression->done(progression);
     free_progression(progression);
     printf("read %d lines from %s.\n", ln, filename);
     result->features = features;

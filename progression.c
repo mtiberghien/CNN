@@ -4,7 +4,7 @@
 #include <omp.h>
 
 //The method is called at each step of a progression
-void progression_callback(progression* progression)
+void progression_step(progression* progression)
 {
     #pragma omp critical
     {
@@ -24,7 +24,6 @@ void progression_done(progression* progression)
 //Execute the done function. The progression object is destroyed
 void free_progression(progression* progression)
 {
-    progression->done(progression);
     free(progression);
 }
 
@@ -35,6 +34,6 @@ progression* build_progression(int total_steps, char* header)
     progression->step=0;
     progression->total_steps=total_steps;
     progression->header=header;
-    progression->call_back=progression_callback;
+    progression->next_step=progression_step;
     progression->done=progression_done;
 }
