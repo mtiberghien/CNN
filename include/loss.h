@@ -19,7 +19,7 @@ typedef struct loss{
 } loss;
 
 
-loss* build_loss(loss_type type);
+extern loss* build_loss(loss_type type);
 void save_loss(FILE* fp, loss* loss);
 loss* read_loss(FILE* fp);
 loss* build_loss_cce();

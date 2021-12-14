@@ -27,9 +27,9 @@ typedef struct optimizer{
     void (*increment_t)(struct optimizer*);
 } optimizer;
 
-optimizer* build_optimizer(optimizer_type type);
-optimizer* build_optimizer_GD(double alpha, double momentum);
-optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps);
+extern optimizer* build_optimizer(optimizer_type type);
+extern optimizer* build_optimizer_GD(double alpha, double momentum);
+extern optimizer* build_optimizer_Adam(double alpha, double beta_1, double beta_2, double eps);
 optimizer* build_default_optimizer();
 void save_optimizer(FILE* fp, optimizer* optimizer);
 optimizer* read_optimizer(FILE* fp);

@@ -26,12 +26,12 @@ typedef struct model{
     loss* loss;
 } model;
 
-model* build_model();
-void clear_model(model* model);
-void save_training_result(training_result* result, char* filename);
-void save_model(model* model, char* filename);
-model* read_model(char* filename);
-void clear_result(training_result* result);
-void free_model(model* model);
-void free_result(training_result* result);
+extern model* build_model();
+extern void clear_model(model* model);
+extern void save_training_result(training_result* result, char* filename);
+extern void save_model(model* model, char* filename);
+extern model* read_model(char* filename);
+extern void clear_result(training_result* result);
+extern void free_model(model* model);
+extern void free_result(training_result* result);
 #endif

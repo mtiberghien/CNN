@@ -18,7 +18,7 @@ typedef struct activation{
     tensor* (*activation_backward_propagation)(const tensor* activation_input, tensor* gradient, tensor* output, struct activation* activation);
 } activation;
 
-activation* build_activation(activation_type type);
+extern activation* build_activation(activation_type type);
 void save_activation(FILE* fp, activation* activation);
 activation* read_activation(FILE* fp);
 tensor* activation_forward(tensor* input, activation* activation);

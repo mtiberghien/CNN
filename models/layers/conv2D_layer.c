@@ -294,7 +294,6 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                         double* array_filter_gradient = cube_filter_gradient[c_in][i];
                         double** matrix_in = cube_input[c_in];
                         double** matrix_gradient_previous= cube_gradient_previous[c_in];
-                        //180 Rotation
                         double filter_ij = cube_filter[c_in][i][j];
                         //Iterate trough each cell of input slice
                         for(int i_y=start_y;i_y<end_y;i_y++)
@@ -302,17 +301,17 @@ tensor *backward_propagation_loop_Conv2D(tensor *gradients, optimizer *optimizer
                             int i_gradient_y = i_y-start_y;
                             double* array_in = matrix_in[i_y];
                             double* array_gradient = matrix_gradient[i_gradient_y];
+                            double* array_gradient_previous= matrix_gradient_previous[i_y];
                             for(int i_x=start_x;i_x<end_x;i_x++)
                             {
                                 int i_gradient_x = i_x-start_x;
-                                double* array_gradient_previous= matrix_gradient_previous[i_x];
+                                
                                 double gradient_y_x = array_gradient[i_gradient_x];
                                 //Sum the product of each input channel with associated output gradient into the filter_gradient
                                 array_filter_gradient[j]+=gradient_y_x*array_in[i_x];
                                 if(layer_index>0)
                                 {
-                                    int i_gradient_x_rotation = output_max_index-i_gradient_x;
-                                    array_gradient_previous[i_y]+=array_gradient[i_gradient_x_rotation]*filter_ij;
+                                    array_gradient_previous[i_x]+=array_gradient[i_gradient_x]*filter_ij;
                                 }                               
                             }
                         }
