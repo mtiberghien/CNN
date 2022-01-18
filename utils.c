@@ -60,6 +60,7 @@ void draw_image(tensor* img)
     }
 }
 
+//Format seconds to seconds string e.g 10-->'10s'
 void to_seconds_string(char* string, long seconds)
 {
     sprintf(string, "%lds", seconds);
